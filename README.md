@@ -1,5 +1,13 @@
-# Google Datastore ORM
-
+# Google Datastore ORM 
+## Installation
+* __Clone the project to src folder__
+```
+  git clone https://github.com/RevenueMonster/rm-srv-lib-db.git db
+```
+* __Import the library__
+```go
+  import "db"
+```
 ## Quick Start
 ### Configure datastore
 ```go
