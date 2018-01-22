@@ -175,6 +175,15 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 	where := make([]string, 0)
 	if len(query.filters) > 0 {
 		for _, f := range query.filters {
+			if f.Field == tagKey {
+				k := f.Value.(*datastore.Key)
+				strKey := stringPrimaryKey(k)
+				q := fmt.Sprintf("(`%s` = %q AND `%s` = %q)",
+					FieldNameKey, strKey, FieldNameParent, stringKey(k.Parent))
+				where = append(where, q)
+				continue
+			}
+
 			s, err := f.String()
 			if err != nil {
 				return nil, err

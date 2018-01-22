@@ -162,7 +162,6 @@ func float64ToString(val interface{}) (*string, error) {
 
 func byteToString(val interface{}) (*string, error) {
 	str := base64.StdEncoding.EncodeToString(val.([]byte))
-	fmt.Println("debug byte : ", str)
 	return &str, nil
 }
 
