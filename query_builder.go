@@ -113,7 +113,7 @@ func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
 // Update :
 func (b *Builder) Update(modelStruct interface{}) error {
 	t := reflect.TypeOf(modelStruct)
-	if t.Kind() != reflect.Ptr {
+	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
 	if t.Kind() == reflect.Struct {
