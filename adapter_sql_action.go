@@ -301,45 +301,75 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 
 // Update :
 func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
-	// v := reflect.ValueOf(modelStruct).Elem()
-	// t := reflect.TypeOf(modelStruct).Elem()
+	t := reflect.TypeOf(modelStruct).Elem()
 
-	// columns, err := getColumns(t)
+	entity, err := getEntity(t)
+	if err != nil {
+		return err
+	}
+
+	table := query.table.name
+	cols := entity.GetFields()
+	vals := make([]string, 0)
+
+	// Call datastore.PropertyLoadSaver's Save func
+	// _, err = entity.SaveFunc(v.Interface())
 	// if err != nil {
 	// 	return err
 	// }
 
-	// primaryKey := datastore.IncompleteKey(x.table, nil)
-	// values := make([]string, 0)
-	// for _, s := range columns {
-	// 	f := v.FieldByName(s.Name)
-	// 	if s.IsPrimaryKey {
-	// 		primaryKey = f.Interface().(*datastore.Key)
-	// 		continue
-	// 	}
-	// 	strValue := ""
-	// 	values = append(values, fmt.Sprintf("`%s` = %s", s.FieldName, strValue))
-	// }
+	primaryKey := datastore.IncompleteKey(table, nil)
 
-	// if primaryKey.Incomplete() {
-	// 	return errors.New("invalid model struct (primary key not found)")
-	// }
+	// Run through every property in struct and convert to string
+	v := reflect.ValueOf(modelStruct)
+	for _, fs := range cols {
+		f := v.Elem().FieldByIndex(fs.Index)
+		if !f.IsValid() {
+			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
+		}
 
-	// strKey := fmt.Sprintf("%q", strconv.FormatInt(primaryKey.ID, 10))
-	// if primaryKey.Parent != nil {
-	// 	strKey = primaryKey.Parent.String()
-	// }
+		// Skip primary key
+		if fs.IsPrimaryKey {
+			primaryKey = f.Interface().(*datastore.Key)
+			continue
+		}
 
-	// condition := fmt.Sprintf("`%s` = %s AND `%s` = %q", FieldNameKey, strKey, FieldNameParent, primaryKey.Parent.String())
-	// sql := fmt.Sprintf("UPDATE `%s` SET %s WHERE %s", query.table.name, strings.Join(values, ","), condition)
+		str, err := fs.String(f.Interface())
+		if err != nil {
+			return err
+		}
 
-	// fmt.Println("************* START UPDATE QUERY ************")
-	// fmt.Println(sql)
-	// fmt.Println("************* ENDED UPDATE QUERY ************")
+		val := "NULL"
+		if str != nil {
+			val = fmt.Sprintf("%s", *str)
+			if fs.Schema.IsEscape {
+				val = fmt.Sprintf("%q", *str)
+			}
+		}
 
-	// if _, err := a.client.Query(sql); err != nil {
-	// 	return err
-	// }
+		vals = append(vals, fmt.Sprintf("`%s` = %s", fs.Name, val))
+	}
+
+	if primaryKey.Incomplete() {
+		return errors.New("goloquent: primary key not found")
+	}
+
+	cond := fmt.Sprintf(
+		"`%s` = %q AND `%s` = %q",
+		FieldNameKey, stringPrimaryKey(primaryKey),
+		FieldNameParent, stringKey(primaryKey.Parent))
+
+	sql := fmt.Sprintf(
+		"UPDATE `%s` SET %s WHERE %s;",
+		table, strings.Join(vals, ","), cond)
+
+	fmt.Println("************* START CREATE QUERY ************")
+	fmt.Println(color.GreenString(sql))
+	fmt.Println("************* ENDED CREATE QUERY ************")
+
+	if _, err := x.Exec(sql); err != nil {
+		return err
+	}
 
 	return nil
 }

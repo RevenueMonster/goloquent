@@ -116,10 +116,15 @@ func (b *Builder) Update(modelStruct interface{}) error {
 	if t.Kind() != reflect.Ptr {
 		t = t.Elem()
 	}
-	if t.Kind() == reflect.Struct {
-		return b.getAdapter().Update(b.query, modelStruct)
+	if t.Kind() != reflect.Struct {
+		return errors.New("goloquent: invalid model")
 	}
 
+	return b.getAdapter().Update(b.query, modelStruct)
+}
+
+// UpdateMulti :
+func (b *Builder) UpdateMulti(modelStruct interface{}) error {
 	v := reflect.Indirect(reflect.ValueOf(modelStruct))
 	if v.Len() > int(MaxRecord) {
 		return fmt.Errorf("goloquent: maximum update records, %d", MaxRecord)
