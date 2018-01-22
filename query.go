@@ -151,7 +151,7 @@ func (q *Query) Order(fields interface{}) *Query {
 
 // Update :
 func (q *Query) Update(values interface{}) error {
-	return newBuilder(q).Update(values)
+	return newBuilder(q).UpdateMulti(values)
 }
 
 // Limit :
