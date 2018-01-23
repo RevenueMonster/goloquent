@@ -7,9 +7,8 @@ import (
 )
 
 // Create :
-func (ds *DataStoreAdapter) Create(query *Query, modelStruct interface{}, parentKey interface{}) error {
-	fmt.Println("datastore create")
-	key := datastore.IncompleteKey(query.table.name, parentKey.(*datastore.Key))
+func (ds *DataStoreAdapter) Create(query *Query, modelStruct interface{}, parentKey *datastore.Key) error {
+	key := ds.newPrimaryKey(query.table.name, parentKey)
 	k, err := ds.client.Put(ds.context, key, modelStruct)
 	if err != nil {
 		return err

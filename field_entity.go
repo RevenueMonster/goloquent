@@ -9,27 +9,32 @@ import (
 	"cloud.google.com/go/datastore"
 )
 
-var entityCacheList = map[string]*Entity{}
+var entityList = map[string]*Entity{}
 
 // Entity :
 type Entity struct {
-	columns     map[string]*Field
-	fields      []*Field
+	// columns     map[string]*Field
+	fields      map[string]*Field
 	PrimaryKey  *Field
 	Type        reflect.Type
-	LoadKeyFunc func(interface{}, *datastore.Key) error
+	loadKeyFunc func(interface{}, *datastore.Key) error
 	LoadFunc    func(interface{}) error
 	SaveFunc    func(interface{}) ([]datastore.Property, error)
 }
 
-// GetColumns :
-func (e *Entity) GetColumns() map[string]*Field {
-	return e.columns
+// GetFields :
+func (e *Entity) GetFields() map[string]*Field {
+	return e.fields
 }
 
-// GetFields :
-func (e *Entity) GetFields() []*Field {
-	return e.fields
+// LoadKey :
+func (e *Entity) LoadKey(i interface{}, key *datastore.Key) error {
+	// Skip to load key if model doesn't have key field
+	if e.PrimaryKey == nil {
+		return nil
+	}
+
+	return e.loadKeyFunc(i, key)
 }
 
 func getEntity(t reflect.Type) (*Entity, error) {
@@ -37,23 +42,32 @@ func getEntity(t reflect.Type) (*Entity, error) {
 		t = t.Elem()
 	}
 	uniqueName := fmt.Sprintf("%s/%s", strings.TrimSpace(strings.Trim(t.PkgPath(), "/")), t.Name())
-	if cache, isExist := entityCacheList[uniqueName]; isExist {
+	if cache, isExist := entityList[uniqueName]; isExist {
 		return cache, nil
 	}
 
-	f, err := ListFields(t)
+	k, f, err := ListFields(t)
 	if err != nil {
 		return nil, err
 	}
-	loadKeyFunc := func(interface{}, *datastore.Key) error {
+
+	loadKeyFunc := func(i interface{}, key *datastore.Key) error {
+		v := reflect.ValueOf(i)
+		f := v.Elem().FieldByIndex(k.Index)
+		if !f.IsValid() {
+			return nil
+		}
+		f.Set(reflect.ValueOf(key))
 		return nil
 	}
+
 	loadFunc := func(interface{}) error {
 		return nil
 	}
 	saveFunc := func(interface{}) ([]datastore.Property, error) {
 		return []datastore.Property{}, nil
 	}
+
 	i := reflect.New(t).Interface()
 	r := reflect.TypeOf(i)
 	keyLoadInterface := reflect.TypeOf((*datastore.KeyLoader)(nil)).Elem()
@@ -66,10 +80,7 @@ func getEntity(t reflect.Type) (*Entity, error) {
 		loadFunc = func(i interface{}) error {
 			props := make([]datastore.Property, 0)
 			f := i.(datastore.KeyLoader)
-			if err := f.Load(props); err != nil {
-				return err
-			}
-			return nil
+			return f.Load(props)
 		}
 		saveFunc = func(i interface{}) ([]datastore.Property, error) {
 			f, isOK := i.(datastore.KeyLoader)
@@ -83,10 +94,7 @@ func getEntity(t reflect.Type) (*Entity, error) {
 		loadFunc = func(i interface{}) error {
 			props := make([]datastore.Property, 0)
 			f := i.(datastore.PropertyLoadSaver)
-			if err := f.Load(props); err != nil {
-				return err
-			}
-			return nil
+			return f.Load(props)
 		}
 		saveFunc = func(i interface{}) ([]datastore.Property, error) {
 			f, isOK := i.(datastore.PropertyLoadSaver)
@@ -97,22 +105,17 @@ func getEntity(t reflect.Type) (*Entity, error) {
 		}
 	}
 
-	cols := make(map[string]*Field, 0)
-	for _, each := range f {
-		cols[each.Name] = each
-	}
-
 	e := &Entity{
+		fields:      f,
 		Type:        t,
-		LoadKeyFunc: loadKeyFunc,
+		PrimaryKey:  k,
+		loadKeyFunc: loadKeyFunc,
 		LoadFunc:    loadFunc,
 		SaveFunc:    saveFunc,
-		columns:     cols,
-		fields:      f,
 	}
 
 	// Cache entity to avoid repeating reflect on the same struct
-	entityCacheList[uniqueName] = e
+	entityList[uniqueName] = e
 
 	return e, nil
 }

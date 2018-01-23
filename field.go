@@ -124,9 +124,9 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 }
 
 // ListFields :
-func ListFields(t reflect.Type) ([]*Field, error) {
-	fields := make([]*Field, 0)
-	// cacheCols := make(map[string]bool, 0)
+func ListFields(t reflect.Type) (*Field, map[string]*Field, error) {
+
+	fields := make(map[string]*Field, 0)
 	scanStructs := make([]*StructScan, 0)
 	scanStructs = append(scanStructs, &StructScan{
 		Column: make([]string, 0),
@@ -154,15 +154,11 @@ func ListFields(t reflect.Type) ([]*Field, error) {
 			}
 
 			if isNameReserved(tag.Name) {
-				return nil, fmt.Errorf("goloquent: name `%s` is reserved", tag.Name)
+				return nil, nil, fmt.Errorf("goloquent: name `%s` is reserved", tag.Name)
 			}
 
 			if t.Kind() == reflect.Ptr {
 				t = t.Elem()
-			}
-
-			if tag.IsPrimaryKey() && t != typeOfDataStoreKey {
-				return nil, errors.New("goloquent: invalid datatype of primary key")
 			}
 
 			col := make([]string, 0)
@@ -173,8 +169,17 @@ func ListFields(t reflect.Type) ([]*Field, error) {
 			index = append(index, r.Index...)
 			index = append(index, i)
 
+			nameKey := strings.Join(col, ".")
+
+			if tag.IsPrimaryKey() {
+				nameKey = tagKey
+				if t != typeOfDataStoreKey {
+					return nil, nil, errors.New("goloquent: invalid datatype of primary key")
+				}
+			}
+
 			if schema, isLeaf := getSchema(tag, t); isLeaf {
-				fields = append(fields, newField(f, tag, col, index, schema))
+				fields[nameKey] = newField(f, tag, col, index, schema)
 				continue
 			}
 
@@ -186,7 +191,7 @@ func ListFields(t reflect.Type) ([]*Field, error) {
 						t = t.Elem()
 					}
 					if _, isLeaf := getSchema(tag, t); isLeaf {
-						fields = append(fields, newField(f, tag, col, index, nil))
+						fields[nameKey] = newField(f, tag, col, index, nil)
 						continue
 					}
 				}
@@ -215,17 +220,15 @@ func ListFields(t reflect.Type) ([]*Field, error) {
 				continue
 			}
 
-			fields = append(fields, fs)
+			fields[nameKey] = fs
 		}
 
 		// unshift scan struct
 		scanStructs = scanStructs[1:]
 	}
 
-	// fmt.Println("Columns name : ", cacheCols)
-	// for _, each := range fields {
-	// 	fmt.Println(each, each.Schema)
-	// }
-	// fmt.Println("Fields : ", fields)
-	return fields, nil
+	pk := fields[tagKey]
+	delete(fields, tagKey)
+
+	return pk, fields, nil
 }

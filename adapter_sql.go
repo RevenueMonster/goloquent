@@ -64,19 +64,6 @@ func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results
 				continue
 			}
 
-			// TODO: check error on loadFunc and move entity LoadKey
-			if fs.IsPrimaryKey {
-				pk := rec[FieldNameKey]
-				parent := rec[FieldNameParent]
-				primaryKey, err := parsePrimaryKey(table, string(pk), string(parent))
-				if err != nil {
-					return slice, err
-				}
-				e.LoadKeyFunc(i.Interface(), primaryKey)
-				f.Set(reflect.ValueOf(primaryKey))
-				continue
-			}
-
 			b, isExist := rec[fs.Name]
 			if !isExist {
 				continue
@@ -93,11 +80,26 @@ func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results
 			}
 		}
 
+		if err := e.LoadFunc(i.Interface()); err != nil {
+			return slice, err
+		}
+
+		// Load PrimaryKey
+		pk := rec[FieldNameKey]
+		parent := rec[FieldNameParent]
+		primaryKey, err := parsePrimaryKey(table, string(pk), string(parent))
+		if err != nil {
+			return slice, err
+		}
+
+		if err := e.LoadKey(i.Interface(), primaryKey); err != nil {
+			return slice, err
+		}
+
 		if !isPtr {
 			i = i.Elem()
 		}
 
-		e.LoadFunc(i.Interface())
 		slice = reflect.Append(slice, i)
 
 	}
@@ -136,8 +138,6 @@ func (x *SQLAdapter) ExecQuery(q string) ([]map[string][]byte, error) {
 
 	c, _ := rows.Columns()
 	intCols := len(c)
-
-	fmt.Println(c)
 
 	for rows.Next() {
 		m := make([]interface{}, intCols)
@@ -242,8 +242,8 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 	return stmt, nil
 }
 
-// toColumnSql :
-func (x *SQLAdapter) toColumnSql(cols []*Field) []string {
+// toColumnSQL :
+func (x *SQLAdapter) toColumnSQL(cols map[string]*Field) []string {
 	script := make([]string, 0)
 
 	for _, each := range cols {

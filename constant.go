@@ -50,6 +50,7 @@ var (
 	ErrUnsupportFeature     = errors.New("goloquent: database not support this feature")
 	ErrInvalidDataTypeModel = errors.New("goloquent: model must be pointer of struct")
 	ErrInvalidPrimaryKey    = errors.New("goloquent: invalid primary key")
+	ErrMissingPrimaryKey    = errors.New("goloquent: missing primary key")
 	ErrParsePrimaryKey      = errors.New("goloquent: unable to parse, invalid key format")
 	utf8CharSet             = &CharSet{"utf8", "utf8_unicode_ci"}
 	latin2CharSet           = &CharSet{"latin2", "latin2_general_ci"}

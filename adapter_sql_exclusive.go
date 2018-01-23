@@ -70,7 +70,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		"`%s` varchar(%d) CHARACTER SET `%s` COLLATE `%s` NOT NULL",
 		FieldNameParent, KeyLength, latin2CharSet.Encoding, latin2CharSet.Collation))
 
-	fieldScript := x.toColumnSql(cols)
+	fieldScript := x.toColumnSQL(cols)
 	script = append(script, fieldScript...)
 
 	// Index primary key field
