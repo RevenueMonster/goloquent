@@ -64,6 +64,7 @@ func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results
 				continue
 			}
 
+			// TODO: check error on loadFunc and move entity LoadKey
 			if fs.IsPrimaryKey {
 				pk := rec[FieldNameKey]
 				parent := rec[FieldNameParent]
@@ -71,6 +72,7 @@ func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results
 				if err != nil {
 					return slice, err
 				}
+				e.LoadKeyFunc(i.Interface(), primaryKey)
 				f.Set(reflect.ValueOf(primaryKey))
 				continue
 			}
@@ -95,6 +97,7 @@ func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results
 			i = i.Elem()
 		}
 
+		e.LoadFunc(i.Interface())
 		slice = reflect.Append(slice, i)
 
 	}
