@@ -10,7 +10,7 @@ type Adapter interface {
 	Get(*Query, interface{}) error                          // Multiple record
 	Paginate(*Query, *Pagination, interface{}) error        // Multiple record
 	Count(*Query) (int, error)                              // Aggregation
-	Create(*Query, interface{}, interface{}) error          // Single record
+	Create(*Query, interface{}, *datastore.Key) error       // Single record
 	Update(*Query, interface{}) error                       // Single record
 	Delete(*Query, *datastore.Key) error                    // Single record
 	SoftDelete(*Query, *datastore.Key) error                // Single record

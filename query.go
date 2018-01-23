@@ -156,5 +156,6 @@ func (q *Query) Update(values interface{}) error {
 
 // Limit :
 func (q *Query) Limit(i int) *Limit {
+	q.limit = uint(i)
 	return newLimit(q)
 }

@@ -14,7 +14,7 @@ import (
 )
 
 // Create :
-func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey interface{}) error {
+func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *datastore.Key) error {
 	t := reflect.TypeOf(modelStruct).Elem()
 
 	entity, err := getEntity(t)
@@ -26,10 +26,7 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey int
 	cols := entity.GetFields()
 
 	// Generate primary key before insert to database
-	primaryKey := x.newPrimaryKey(table, nil)
-	if parentKey != nil {
-		primaryKey = x.newPrimaryKey(table, parentKey.(*datastore.Key))
-	}
+	primaryKey := x.newPrimaryKey(table, parentKey)
 
 	fields := make([]string, 0)
 	fields = append(fields, fmt.Sprintf("`%s`", FieldNameKey))
@@ -47,16 +44,15 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey int
 
 	// Run through every property in struct and convert to string
 	v := reflect.ValueOf(modelStruct)
+	if entity.PrimaryKey != nil {
+		f := v.Elem().FieldByIndex(entity.PrimaryKey.Index)
+		f.Set(reflect.ValueOf(primaryKey))
+	}
+
 	for _, fs := range cols {
 		f := v.Elem().FieldByIndex(fs.Index)
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
-		}
-
-		// Skip primary key
-		if fs.IsPrimaryKey {
-			f.Set(reflect.ValueOf(primaryKey))
-			continue
 		}
 
 		str, err := fs.String(f.Interface())
@@ -147,10 +143,6 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
-			// Skip primary key
-			if fs.IsPrimaryKey {
-				continue
-			}
 			f := fv.Elem().FieldByIndex(fs.Index)
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
@@ -232,7 +224,7 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 	for i := 0; i < v.Len(); i++ {
 		fv := v.Index(i)
 		if !fv.IsValid() {
-			return errors.New("goloquent (upsert multiple): invalid model data")
+			return errors.New("goloquent: invalid model data")
 		}
 
 		// Generate primary key before insert to database
@@ -252,9 +244,9 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
 			// Skip primary key
-			if fs.IsPrimaryKey {
-				continue
-			}
+			// if fs.IsPrimaryKey {
+			// 	continue
+			// }
 			f := fv.Elem().FieldByIndex(fs.Index)
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
@@ -318,20 +310,22 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 	// 	return err
 	// }
 
-	primaryKey := datastore.IncompleteKey(table, nil)
-
 	// Run through every property in struct and convert to string
 	v := reflect.ValueOf(modelStruct)
+	if entity.PrimaryKey == nil {
+		return ErrMissingPrimaryKey
+	}
+
+	k := v.Elem().FieldByIndex(entity.PrimaryKey.Index)
+	if !k.IsValid() || k.IsNil() {
+		return ErrMissingPrimaryKey
+	}
+	primaryKey := k.Interface().(*datastore.Key)
+
 	for _, fs := range cols {
 		f := v.Elem().FieldByIndex(fs.Index)
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
-		}
-
-		// Skip primary key
-		if fs.IsPrimaryKey {
-			primaryKey = f.Interface().(*datastore.Key)
-			continue
 		}
 
 		str, err := fs.String(f.Interface())

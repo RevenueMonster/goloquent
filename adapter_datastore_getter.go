@@ -9,10 +9,7 @@ import (
 // Find :
 func (ds *DataStoreAdapter) Find(q *Query, key *datastore.Key, modelStruct interface{}) error {
 	fmt.Println("datastore find")
-	if err := ds.client.Get(ds.context, key, modelStruct); err != nil {
-		return err
-	}
-	return nil
+	return ds.client.Get(ds.context, key, modelStruct)
 }
 
 // First :
