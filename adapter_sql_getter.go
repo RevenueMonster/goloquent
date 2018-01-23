@@ -131,7 +131,6 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 	fmt.Println(color.GreenString(q))
 	fmt.Println("************* ENDED GET QUERY ************")
 
-	// cols := entity.GetFields()
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(q)
 	if err != nil {

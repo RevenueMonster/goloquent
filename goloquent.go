@@ -45,24 +45,8 @@ func newDatastore(connStr string) (*Connection, error) {
 	}, nil
 }
 
-// func newXORM(connStr string) (*Connection, error) {
-// 	client, err := xorm.NewEngine("mysql", connStr)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	if e := client.DB().Ping(); e != nil {
-// 		return nil, e
-// 	}
-// 	return &Connection{
-// 		db: dbMySQL,
-// 		adapter: &XORMAdapter{
-// 			client: client,
-// 		},
-// 	}, nil
-// }
-
 func newMySQL(connStr string) (*Connection, error) {
-	client, err := sql.Open("mysql", connStr)
+	client, err := sql.Open(dbMySQL, connStr)
 	if err != nil {
 		panic(err)
 	}
