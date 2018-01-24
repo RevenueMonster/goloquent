@@ -124,9 +124,10 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 }
 
 // ListFields :
-func ListFields(t reflect.Type) (*Field, map[string]*Field, error) {
+func ListFields(t reflect.Type) (*Field, []*Field, error) {
 
-	fields := make(map[string]*Field, 0)
+	var pk *Field
+	fields := make([]*Field, 0)
 	scanStructs := make([]*StructScan, 0)
 	scanStructs = append(scanStructs, &StructScan{
 		Column: make([]string, 0),
@@ -169,17 +170,16 @@ func ListFields(t reflect.Type) (*Field, map[string]*Field, error) {
 			index = append(index, r.Index...)
 			index = append(index, i)
 
-			nameKey := strings.Join(col, ".")
-
 			if tag.IsPrimaryKey() {
-				nameKey = tagKey
 				if t != typeOfDataStoreKey {
 					return nil, nil, errors.New("goloquent: invalid datatype of primary key")
 				}
+				pk = newField(f, tag, col, index, nil)
+				continue
 			}
 
 			if schema, isLeaf := getSchema(tag, t); isLeaf {
-				fields[nameKey] = newField(f, tag, col, index, schema)
+				fields = append(fields, newField(f, tag, col, index, schema))
 				continue
 			}
 
@@ -191,7 +191,7 @@ func ListFields(t reflect.Type) (*Field, map[string]*Field, error) {
 						t = t.Elem()
 					}
 					if _, isLeaf := getSchema(tag, t); isLeaf {
-						fields[nameKey] = newField(f, tag, col, index, nil)
+						fields = append(fields, newField(f, tag, col, index, nil))
 						continue
 					}
 				}
@@ -220,15 +220,12 @@ func ListFields(t reflect.Type) (*Field, map[string]*Field, error) {
 				continue
 			}
 
-			fields[nameKey] = fs
+			fields = append(fields, fs)
 		}
 
 		// unshift scan struct
 		scanStructs = scanStructs[1:]
 	}
-
-	pk := fields[tagKey]
-	delete(fields, tagKey)
 
 	return pk, fields, nil
 }

@@ -14,7 +14,7 @@ var entityList = map[string]*Entity{}
 // Entity :
 type Entity struct {
 	// columns     map[string]*Field
-	fields      map[string]*Field
+	fields      []*Field
 	PrimaryKey  *Field
 	Type        reflect.Type
 	loadKeyFunc func(interface{}, *datastore.Key) error
@@ -23,7 +23,7 @@ type Entity struct {
 }
 
 // GetFields :
-func (e *Entity) GetFields() map[string]*Field {
+func (e *Entity) GetFields() []*Field {
 	return e.fields
 }
 
