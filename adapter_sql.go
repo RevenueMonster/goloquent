@@ -243,18 +243,13 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 }
 
 // toColumnSQL :
-func (x *SQLAdapter) toColumnSQL(cols map[string]*Field) []string {
+func (x *SQLAdapter) toColumnSQL(cols []*Field) []string {
 	script := make([]string, 0)
 
 	for _, each := range cols {
 		s := each.Schema
 		// tag := each.Tag
 		settings := make([]string, 0)
-
-		// Ignore primary key field
-		if each.IsPrimaryKey {
-			continue
-		}
 
 		// if s.IsUnsigned && tag.IsUnsigned() {
 		// 	settings = append(settings, "UNSIGNED")
