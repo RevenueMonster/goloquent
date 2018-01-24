@@ -13,6 +13,7 @@ const (
 	FieldNameKey        = "$Key"
 	FieldNameParent     = "$Parent"
 	FieldNamePrimaryKey = "$PrimaryKey"
+	FieldNameSoftDelete = "DeletedDateTime"
 	IDLength            = 20
 	KeyLength           = 767
 	TextLength          = 255
@@ -40,6 +41,7 @@ var fieldNameReserved = []string{
 	FieldNamePrimaryKey,
 	FieldNameParent,
 	FieldNameKey,
+	FieldNameSoftDelete,
 }
 
 // Goloquent Error
@@ -57,6 +59,7 @@ var (
 )
 
 var (
+	typeOfSoftDelete   = reflect.TypeOf(SoftDelete{})
 	typeOfString       = reflect.TypeOf(string(""))
 	typeOfBool         = reflect.TypeOf(bool(false))
 	typeOfInt          = reflect.TypeOf(int(0))

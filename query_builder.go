@@ -99,9 +99,9 @@ func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
 		return ErrInvalidDataTypeModel
 	}
 	t = t.Elem()
-	// if t.Kind() == reflect.Struct {
-	// 	return b.getAdapter().Create(b.query, modelStruct, parentKey)
-	// }
+	if t.Kind() == reflect.Struct {
+		return b.getAdapter().Upsert(b.query, modelStruct, parentKey.(*datastore.Key))
+	}
 
 	v := reflect.Indirect(reflect.ValueOf(modelStruct))
 	if v.Len() <= 0 {

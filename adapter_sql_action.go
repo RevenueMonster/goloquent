@@ -186,6 +186,76 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 	return nil
 }
 
+// Upsert :
+func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *datastore.Key) error {
+	t := reflect.TypeOf(modelStruct).Elem()
+
+	entity, err := getEntity(t)
+	if err != nil {
+		return err
+	}
+
+	table := query.table.name
+	cols := entity.GetFields()
+
+	// Generate primary key before insert to database
+	primaryKey := x.newPrimaryKey(table, parentKey)
+
+	fields := make([]string, 0)
+	fields = append(fields, fmt.Sprintf("`%s`", FieldNameKey))
+	fields = append(fields, fmt.Sprintf("`%s`", FieldNameParent))
+
+	vals := make([]string, 0)
+	vals = append(vals, fmt.Sprintf("%q", stringPrimaryKey(primaryKey)))
+	vals = append(vals, fmt.Sprintf("%q", primaryKey.Parent.String()))
+
+	// Run through every property in struct and convert to string
+	where := make([]string, 0)
+	v := reflect.ValueOf(modelStruct)
+	if entity.PrimaryKey != nil {
+		f := v.Elem().FieldByIndex(entity.PrimaryKey.Index)
+		f.Set(reflect.ValueOf(primaryKey))
+	}
+
+	for _, fs := range cols {
+		f := v.Elem().FieldByIndex(fs.Index)
+		if !f.IsValid() {
+			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
+		}
+
+		str, err := fs.String(f.Interface())
+		if err != nil {
+			return err
+		}
+
+		val := "NULL"
+		if str != nil {
+			val = fmt.Sprintf("%s", *str)
+			if fs.Schema.IsEscape {
+				val = fmt.Sprintf("%q", *str)
+			}
+		}
+
+		where = append(where, fmt.Sprintf("`%s`=VALUES(`%s`)", fs.Name, fs.Name))
+		fields = append(fields, fmt.Sprintf("`%s`", fs.Name))
+		vals = append(vals, fmt.Sprintf("%s", val))
+	}
+
+	sql := fmt.Sprintf(
+		"INSERT INTO `%s` (%v) VALUES (%v) ON DUPLICATE KEY UPDATE %s;",
+		table, strings.Join(fields, ","), strings.Join(vals, ","), strings.Join(where, ","))
+
+	fmt.Println("************* START CREATE QUERY ************")
+	fmt.Println(color.GreenString(sql))
+	fmt.Println("************* ENDED CREATE QUERY ************")
+
+	if _, err := x.Exec(sql); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // UpsertMulti :
 func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKey interface{}) error {
 	t := reflect.TypeOf(modelStruct).Elem().Elem()
@@ -243,10 +313,6 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
-			// Skip primary key
-			// if fs.IsPrimaryKey {
-			// 	continue
-			// }
 			f := fv.Elem().FieldByIndex(fs.Index)
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)

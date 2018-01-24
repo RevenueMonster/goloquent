@@ -23,7 +23,7 @@ func (ds *DataStoreAdapter) CreateMulti(query *Query, modelStruct interface{}, p
 }
 
 // Upsert :
-func (ds *DataStoreAdapter) Upsert(query *Query, modelStruct interface{}, parentKey interface{}) error {
+func (ds *DataStoreAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *datastore.Key) error {
 	return nil
 }
 

@@ -5,9 +5,15 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/datastore"
 )
+
+// SoftDelete :
+type SoftDelete struct {
+	DeletedDateTime time.Time `json:"-" xml:"-" datastore:"DeletedDateTime"`
+}
 
 // Connection :
 type Connection struct {

@@ -12,6 +12,7 @@ type Adapter interface {
 	Count(*Query) (int, error)                              // Aggregation
 	Create(*Query, interface{}, *datastore.Key) error       // Single record
 	Update(*Query, interface{}) error                       // Single record
+	Upsert(*Query, interface{}, *datastore.Key) error       // Single record
 	Delete(*Query, *datastore.Key) error                    // Single record
 	SoftDelete(*Query, *datastore.Key) error                // Single record
 	RunInTransaction(*Table, func(*Connection) error) error // Transaction
