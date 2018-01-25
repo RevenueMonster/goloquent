@@ -74,10 +74,10 @@ func (b *Builder) Create(modelStruct interface{}, parentKey interface{}) error {
 	}
 	t = t.Elem()
 	if t.Kind() == reflect.Struct {
-		key, isValid := parentKey.(*datastore.Key)
-		if !isValid {
+		if reflect.TypeOf(parentKey) != typeOfPtrDataStoreKey {
 			return errors.New("goloquent: invalid key data type")
 		}
+		key := parentKey.(*datastore.Key)
 		return b.getAdapter().Create(b.query, modelStruct, key)
 	}
 
