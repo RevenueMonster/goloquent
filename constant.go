@@ -28,6 +28,7 @@ const (
 	modeNormal          = "normal"
 	modeTransaction     = "transaction"
 	optionTagDatastore  = "datastore" // option tag
+	optionTagGoloquent  = "goloquent"
 	tagKey              = "__key__"
 	tagOmitEmpty        = "omitempty"
 	tagNoIndex          = "noindex"
