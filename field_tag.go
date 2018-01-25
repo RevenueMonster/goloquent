@@ -52,6 +52,8 @@ func (t *Tag) IsLongText() bool {
 func newTag(r reflect.StructField) *Tag {
 	tagName := r.Name
 	tag := strings.TrimSpace(r.Tag.Get(optionTagDatastore))
+	pkgTag := strings.TrimSpace(r.Tag.Get(optionTagGoloquent))
+
 	// Indentify primary key with __key__
 	isMatch := IsPrimaryKey(tag)
 	paths := strings.Split(tag, ",")
@@ -75,6 +77,7 @@ func newTag(r reflect.StructField) *Tag {
 
 	// sync tag option
 	optionPaths := paths[1:]
+	optionPaths = append(optionPaths, strings.Split(pkgTag, ",")...)
 	if len(optionPaths) > 0 {
 		for _, name := range optionPaths {
 			name = strings.ToLower(name)

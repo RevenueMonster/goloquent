@@ -132,8 +132,9 @@ func (q *Query) Where(field string, o string, value interface{}) *Query {
 	}
 
 	v := reflect.ValueOf(value)
-	if o != "IN" && (v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
-		f := make([]*Filter, v.Len())
+	if o != "IN" && v.Type() != typeOfByte &&
+		(v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
+		f := make([]*Filter, v.Len(), v.Len())
 		for i := 0; i < v.Len(); i++ {
 			f[i] = newFilter(field, o, v.Index(i).Interface(), m)
 		}
