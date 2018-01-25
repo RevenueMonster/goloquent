@@ -10,14 +10,15 @@ import (
 )
 
 var operators = map[string]*operatorMapper{
-	"=":    &operatorMapper{dbHybrid, eqOperatorToString},
-	">":    &operatorMapper{dbHybrid, compareOperatorToString},
-	"<":    &operatorMapper{dbHybrid, compareOperatorToString},
-	">=":   &operatorMapper{dbHybrid, compareOperatorToString},
-	"<=":   &operatorMapper{dbHybrid, compareOperatorToString},
-	"IN":   &operatorMapper{dbHybrid, inOperatorToString},
-	"!=":   &operatorMapper{dbMySQL, eqOperatorToString},
-	"LIKE": &operatorMapper{dbMySQL, compareOperatorToString},
+	"=":        &operatorMapper{dbHybrid, eqOperatorToString},
+	">":        &operatorMapper{dbHybrid, compareOperatorToString},
+	"<":        &operatorMapper{dbHybrid, compareOperatorToString},
+	">=":       &operatorMapper{dbHybrid, compareOperatorToString},
+	"<=":       &operatorMapper{dbHybrid, compareOperatorToString},
+	"IN":       &operatorMapper{dbHybrid, inOperatorToString},
+	"!=":       &operatorMapper{dbMySQL, eqOperatorToString},
+	"LIKE":     &operatorMapper{dbMySQL, compareOperatorToString},
+	"NOT LIKE": &operatorMapper{dbMySQL, compareOperatorToString},
 }
 
 // Filter :
@@ -106,14 +107,22 @@ func (q *Query) Ancestor(ancestorKey *datastore.Key) *Query {
 	return q
 }
 
+// // WhereLike :
+// func (q *Query) WhereLike(field string, value interface{}) *Query {
+// 	q.filters = append(q.filters, newFilter(field, "LIKE", value, operators["LIKE"]))
+// 	return q
+// }
+
+// // WhereNotLike :
+// func (q *Query) WhereNotLike(field string, value interface{}) *Query {
+// 	q.filters = append(q.filters, newFilter(field, "NOT LIKE", value, operators["NOT LIKE"]))
+// 	return q
+// }
+
 // Where :
-func (q *Query) Where(field string, value interface{}) *Query {
+func (q *Query) Where(field string, o string, value interface{}) *Query {
 	field = strings.TrimSpace(field)
-	f := strings.Split(field, " ")
-	if len(f) != 2 {
-		panic(fmt.Errorf("goloquent: invalid field and operator"))
-	}
-	o := strings.TrimSpace(strings.ToUpper(f[1]))
+	o = strings.TrimSpace(strings.ToUpper(o))
 	m, isOK := operators[o]
 	if !isOK {
 		panic(fmt.Errorf("goloquent: unsupported operator %v", o))
@@ -122,8 +131,17 @@ func (q *Query) Where(field string, value interface{}) *Query {
 		panic(fmt.Errorf("goloquent: unsupported operator %v", o))
 	}
 
-	field = strings.TrimSpace(f[0])
-	q.filters = append(q.filters, newFilter(field, o, value, m))
+	v := reflect.ValueOf(value)
+	if o != "IN" && (v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
+		f := make([]*Filter, v.Len())
+		for i := 0; i < v.Len(); i++ {
+			f[i] = newFilter(field, o, v.Index(i).Interface(), m)
+		}
+		q.filters = append(q.filters, f...)
+	} else {
+		q.filters = append(q.filters, newFilter(field, o, value, m))
+	}
+
 	return q
 }
 

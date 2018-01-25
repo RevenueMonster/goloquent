@@ -55,9 +55,19 @@ func (t *Table) Ancestor(parentKey *datastore.Key) *Query {
 }
 
 // Where :
-func (t *Table) Where(field string, value interface{}) *Query {
-	return newQuery(t).Where(field, value)
+func (t *Table) Where(field string, o string, value interface{}) *Query {
+	return newQuery(t).Where(field, o, value)
 }
+
+// // WhereNotLike :
+// func (t *Table) WhereNotLike(field string, value interface{}) *Query {
+// 	return newQuery(t).WhereNotLike(field, value)
+// }
+
+// // WhereLike :
+// func (t *Table) WhereLike(field string, value interface{}) *Query {
+// 	return newQuery(t).WhereLike(field, value)
+// }
 
 // Order :
 func (t *Table) Order(fields string) *Query {
