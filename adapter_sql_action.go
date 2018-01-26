@@ -539,7 +539,7 @@ func (x *SQLAdapter) DeleteMulti(query *Query, keys []*datastore.Key) error {
 
 // SoftDelete :
 func (x *SQLAdapter) SoftDelete(query *Query, key *datastore.Key) error {
-	value := fmt.Sprintf("`DeletedDateTime` = %q", time.Now().UTC().Format(MySQLDateTimeFormat))
+	value := fmt.Sprintf("`%s` = %q", FieldNameSoftDelete, time.Now().UTC().Format(MySQLDateTimeFormat))
 	where := fmt.Sprintf("WHERE `%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
 	sql := fmt.Sprintf("UPDATE `%s` SET %s %s", query.table.name, value, where)

@@ -105,6 +105,9 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 	case typeOfByte:
 		schema = &FieldSchema{"blob", nil, true, false, false, nil}
 
+	case typeOfSoftDelete:
+		schema = &FieldSchema{"datetime", nil, true, false, true, nil}
+
 	case typeOfTime:
 		schema = &FieldSchema{"datetime", time.Time{}, true, false, false, nil}
 
@@ -124,9 +127,9 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 }
 
 // ListFields :
-func ListFields(t reflect.Type) (*Field, []*Field, error) {
+func ListFields(t reflect.Type) (*Field, *Field, []*Field, error) {
 
-	var pk *Field
+	var pk, soft *Field
 	fields := make([]*Field, 0)
 	scanStructs := make([]*StructScan, 0)
 	scanStructs = append(scanStructs, &StructScan{
@@ -155,7 +158,7 @@ func ListFields(t reflect.Type) (*Field, []*Field, error) {
 			}
 
 			if isNameReserved(tag.Name) {
-				return nil, nil, fmt.Errorf("goloquent: name `%s` is reserved", tag.Name)
+				return nil, nil, nil, fmt.Errorf("goloquent: name `%s` is reserved", tag.Name)
 			}
 
 			if t.Kind() == reflect.Ptr {
@@ -172,9 +175,15 @@ func ListFields(t reflect.Type) (*Field, []*Field, error) {
 
 			if tag.IsPrimaryKey() {
 				if t != typeOfDataStoreKey {
-					return nil, nil, errors.New("goloquent: invalid datatype of primary key")
+					return nil, nil, nil, errors.New("goloquent: invalid datatype of primary key")
 				}
 				pk = newField(f, tag, col, index, nil)
+				continue
+			}
+
+			if t == typeOfSoftDelete {
+				schema, _ := getSchema(tag, t)
+				soft = newField(f, tag, col, index, schema)
 				continue
 			}
 
@@ -227,5 +236,5 @@ func ListFields(t reflect.Type) (*Field, []*Field, error) {
 		scanStructs = scanStructs[1:]
 	}
 
-	return pk, fields, nil
+	return pk, soft, fields, nil
 }
