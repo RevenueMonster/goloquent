@@ -182,7 +182,7 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 				k := f.Value.(*datastore.Key)
 				strKey := stringPrimaryKey(k)
 				q := fmt.Sprintf("(`%s` = %q AND `%s` = %q)",
-					FieldNameKey, strKey, FieldNameParent, stringKey(k.Parent))
+					FieldNameKey, strKey, FieldNameParent, k.Parent.String())
 				where = append(where, q)
 				continue
 			}
