@@ -13,6 +13,9 @@ type operatorMapper struct {
 }
 
 func anyOperatorToString(it interface{}) (*string, error) {
+	if it == nil {
+		return nil, nil
+	}
 	t := reflect.TypeOf(it)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -41,9 +44,6 @@ func anyOperatorToString(it interface{}) (*string, error) {
 }
 
 func eqOperatorToString(it interface{}) (*string, error) {
-	if it == nil {
-		return nil, nil
-	}
 	return anyOperatorToString(it)
 }
 
@@ -66,6 +66,10 @@ func compareOperatorToString(it interface{}) (*string, error) {
 }
 
 func inOperatorToString(it interface{}) (*string, error) {
+	if it == nil {
+		s := "(NULL)"
+		return &s, nil
+	}
 	var (
 		str *string
 		err error

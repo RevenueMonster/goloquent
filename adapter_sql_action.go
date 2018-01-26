@@ -417,7 +417,7 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(primaryKey),
-		FieldNameParent, stringKey(primaryKey.Parent))
+		FieldNameParent, primaryKey.Parent.String())
 
 	sql := fmt.Sprintf(
 		"UPDATE `%s` SET %s WHERE %s;",
