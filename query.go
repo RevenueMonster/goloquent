@@ -131,17 +131,20 @@ func (q *Query) Where(field string, o string, value interface{}) *Query {
 		panic(fmt.Errorf("goloquent: unsupported operator %v", o))
 	}
 
-	v := reflect.ValueOf(value)
-	if o != "IN" && v.Type() != typeOfByte &&
-		(v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
-		f := make([]*Filter, v.Len(), v.Len())
-		for i := 0; i < v.Len(); i++ {
-			f[i] = newFilter(field, o, v.Index(i).Interface(), m)
+	if value != nil {
+		v := reflect.ValueOf(value)
+		if o != "IN" && v.Type() != typeOfByte &&
+			(v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
+			f := make([]*Filter, v.Len(), v.Len())
+			for i := 0; i < v.Len(); i++ {
+				f[i] = newFilter(field, o, v.Index(i).Interface(), m)
+			}
+			q.filters = append(q.filters, f...)
+			return q
 		}
-		q.filters = append(q.filters, f...)
-	} else {
-		q.filters = append(q.filters, newFilter(field, o, value, m))
 	}
+
+	q.filters = append(q.filters, newFilter(field, o, value, m))
 
 	return q
 }
