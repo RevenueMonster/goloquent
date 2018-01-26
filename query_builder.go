@@ -31,7 +31,7 @@ func (b *Builder) Find(key *datastore.Key, modelStruct interface{}) error {
 	}
 	e := typeOf.Elem()
 	if e.Kind() != reflect.Struct {
-		return errors.New("model must be struct")
+		return errors.New("goloquent: model must be struct")
 	}
 
 	return b.query.table.connection.adapter.Find(b.query, key, modelStruct)
