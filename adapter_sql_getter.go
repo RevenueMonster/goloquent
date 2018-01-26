@@ -207,7 +207,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	}
 	sql += fmt.Sprintf(" LIMIT %d", cap)
 
-	var total int
+	var total uint
 	total, err = x.Count(query)
 	if err != nil {
 		return err
@@ -241,7 +241,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	fmt.Println(last)
 
 	// Sync pagination data
-	p.Total = uint(total)
+	p.Total = total
 	p.Count = uint(len(results))
 	p.Cursor = ""
 

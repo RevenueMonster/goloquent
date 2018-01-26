@@ -9,7 +9,7 @@ import (
 )
 
 // Count :
-func (x *SQLAdapter) Count(query *Query) (int, error) {
+func (x *SQLAdapter) Count(query *Query) (uint, error) {
 	table := query.table.name
 	stmt, err := x.CompileStatement(query)
 	if err != nil {
@@ -44,5 +44,5 @@ func (x *SQLAdapter) Count(query *Query) (int, error) {
 		}
 	}
 
-	return intCount, nil
+	return uint(intCount), nil
 }

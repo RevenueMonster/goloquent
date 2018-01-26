@@ -129,7 +129,7 @@ func (x *SQLAdapter) DropIfExists(query *Query) error {
 }
 
 // UniqueIndex :
-func (x *SQLAdapter) UniqueIndex(query *Query, fields []string) error {
+func (x *SQLAdapter) UniqueIndex(query *Query, fields ...string) error {
 	table := query.table.name
 	sql := fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON `%s` (%s);", strings.Join(fields, "_"), table, strings.Join(fields, ","))
 
