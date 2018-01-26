@@ -85,7 +85,7 @@ func (t *Table) Limit(i int) *Limit {
 }
 
 // Count :
-func (t *Table) Count() (int, error) {
+func (t *Table) Count() (uint, error) {
 	return newBuilder(newQuery(t)).Count()
 }
 

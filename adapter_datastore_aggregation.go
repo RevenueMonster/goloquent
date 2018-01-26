@@ -1,7 +1,7 @@
 package goloquent
 
 // Count :
-func (ds *DataStoreAdapter) Count(query *Query) (int, error) {
+func (ds *DataStoreAdapter) Count(query *Query) (uint, error) {
 	// stmt, err := ds.CompileQuery(query)
 	// if err != nil {
 	// 	return 0, err

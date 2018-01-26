@@ -172,6 +172,11 @@ func (q *Query) Order(fields interface{}) *Query {
 	return q
 }
 
+// Count :
+func (q *Query) Count() (uint, error) {
+	return newBuilder(q).Count()
+}
+
 // WithTrashed :
 func (q *Query) WithTrashed() *Query {
 	q.hasTrashed = true

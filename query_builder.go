@@ -62,7 +62,7 @@ func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
 }
 
 // Count :
-func (b *Builder) Count() (int, error) {
+func (b *Builder) Count() (uint, error) {
 	return b.getAdapter().Count(b.query)
 }
 
