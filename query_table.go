@@ -142,10 +142,10 @@ func (t *Table) DropIfExists() error {
 }
 
 // UniqueIndex : (SQL exclusive actions)
-func (t *Table) UniqueIndex(fields []string) error {
+func (t *Table) UniqueIndex(fields ...string) error {
 	adapter, err := t.getSQLAdapter()
 	if err != nil {
 		return err
 	}
-	return adapter.UniqueIndex(newQuery(t), fields)
+	return adapter.UniqueIndex(newQuery(t), fields...)
 }
