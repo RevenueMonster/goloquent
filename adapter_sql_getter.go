@@ -12,30 +12,33 @@ import (
 // Find :
 func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interface{}) error {
 	table := query.table.name
+	var entity *Entity
+	t := reflect.TypeOf(modelStruct)
+	entity, err := getEntity(t)
+	if err != nil {
+		return err
+	}
+
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
+	if entity.SoftDelete != nil {
+		cond += fmt.Sprintf(" AND `%s` IS NULL", FieldNameSoftDelete)
+	}
 
 	q := fmt.Sprintf("SELECT * FROM `%s` WHERE %s LIMIT 1;", table, cond)
 	fmt.Println("************* START FIND QUERY ************")
 	fmt.Println(color.GreenString(q))
 	fmt.Println("************* ENDED FIND QUERY ************")
 
-	// results := make([]map[string][]byte, 0)
-	results, err := x.ExecQuery(q)
+	results := make([]map[string][]byte, 0)
+	results, err = x.ExecQuery(q)
 	if err != nil {
 		return err
 	}
 
 	if len(results) <= 0 {
 		return ErrNoSuchEntity
-	}
-
-	var entity *Entity
-	t := reflect.TypeOf(modelStruct)
-	entity, err = getEntity(t)
-	if err != nil {
-		return err
 	}
 
 	var slice reflect.Value
@@ -54,7 +57,16 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 // First :
 func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 	table := query.table.name
-	stmt, err := x.CompileStatement(query)
+
+	t := reflect.TypeOf(modelStruct)
+	entity, err := getEntity(t)
+	if err != nil {
+		return err
+	}
+
+	query = x.appendStatement(entity, query)
+	var stmt *Statement
+	stmt, err = x.CompileStatement(query)
 	if err != nil {
 		return err
 	}
@@ -82,13 +94,6 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 		return nil
 	}
 
-	var entity *Entity
-	t := reflect.TypeOf(modelStruct)
-	entity, err = getEntity(t)
-	if err != nil {
-		return err
-	}
-
 	var slice reflect.Value
 	slice, err = x.mapResults(query, entity, t, results)
 	if err != nil {
@@ -109,6 +114,19 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 		err  error
 	)
 
+	var entity *Entity
+	t := reflect.TypeOf(modelStruct)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	t = t.Elem()
+
+	entity, err = getEntity(t)
+	if err != nil {
+		return err
+	}
+
+	query = x.appendStatement(entity, query)
 	table := query.table.name
 	stmt, err = x.CompileStatement(query)
 	if err != nil {
@@ -141,18 +159,6 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 		return nil
 	}
 
-	var entity *Entity
-	t := reflect.TypeOf(modelStruct)
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-	t = t.Elem()
-
-	entity, err = getEntity(t)
-	if err != nil {
-		return err
-	}
-
 	var slice reflect.Value
 	slice, err = x.mapResults(query, entity, t, results)
 	if err != nil {
@@ -169,11 +175,6 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface{}) error {
 	table := query.table.name
 
-	stmt, err := x.CompileStatement(query)
-	if err != nil {
-		return err
-	}
-
 	var entity *Entity
 	t := reflect.TypeOf(modelStruct)
 	if t.Kind() == reflect.Ptr {
@@ -181,7 +182,14 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	}
 	t = t.Elem()
 
-	entity, err = getEntity(t)
+	entity, err := getEntity(t)
+	if err != nil {
+		return err
+	}
+
+	query = x.appendStatement(entity, query)
+	var stmt *Statement
+	stmt, err = x.CompileStatement(query)
 	if err != nil {
 		return err
 	}

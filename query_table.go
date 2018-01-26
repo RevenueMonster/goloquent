@@ -69,6 +69,11 @@ func (t *Table) Where(field string, o string, value interface{}) *Query {
 // 	return newQuery(t).WhereLike(field, value)
 // }
 
+// WithTrashed :
+func (t *Table) WithTrashed() *Query {
+	return newQuery(t).WithTrashed()
+}
+
 // Order :
 func (t *Table) Order(fields string) *Query {
 	return newQuery(t).Order(fields)

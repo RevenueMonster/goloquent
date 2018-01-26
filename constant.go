@@ -13,7 +13,7 @@ const (
 	FieldNameKey        = "$Key"
 	FieldNameParent     = "$Parent"
 	FieldNamePrimaryKey = "$PrimaryKey"
-	FieldNameSoftDelete = "DeletedDateTime"
+	FieldNameSoftDelete = "DeletedAt"
 	IDLength            = 20
 	KeyLength           = 767
 	TextLength          = 255
@@ -38,6 +38,11 @@ const (
 	tagLongText         = "longtext" // extra
 )
 
+// SoftDelete :
+type SoftDelete struct {
+	DeletedDateTime time.Time `datastore:"DeletedAt" json:"-" xml:"-"`
+}
+
 var fieldNameReserved = []string{
 	FieldNamePrimaryKey,
 	FieldNameParent,
@@ -60,7 +65,6 @@ var (
 )
 
 var (
-	typeOfSoftDelete      = reflect.TypeOf(SoftDelete{})
 	typeOfString          = reflect.TypeOf(string(""))
 	typeOfBool            = reflect.TypeOf(bool(false))
 	typeOfInt             = reflect.TypeOf(int(0))
@@ -75,4 +79,5 @@ var (
 	typeOfDataStoreKey    = reflect.TypeOf(datastore.Key{})
 	typeOfPtrDataStoreKey = reflect.TypeOf(&datastore.Key{})
 	typeOfGeopoint        = reflect.TypeOf(datastore.GeoPoint{})
+	typeOfSoftDelete      = reflect.TypeOf(SoftDelete{})
 )

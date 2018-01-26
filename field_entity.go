@@ -17,6 +17,7 @@ type Entity struct {
 	fields      []*Field
 	PrimaryKey  *Field
 	Type        reflect.Type
+	SoftDelete  *Field
 	loadKeyFunc func(interface{}, *datastore.Key) error
 	LoadFunc    func(interface{}) error
 	SaveFunc    func(interface{}) ([]datastore.Property, error)
@@ -46,7 +47,7 @@ func getEntity(t reflect.Type) (*Entity, error) {
 		return cache, nil
 	}
 
-	k, f, err := ListFields(t)
+	k, s, f, err := ListFields(t)
 	if err != nil {
 		return nil, err
 	}
@@ -109,6 +110,7 @@ func getEntity(t reflect.Type) (*Entity, error) {
 		fields:      f,
 		Type:        t,
 		PrimaryKey:  k,
+		SoftDelete:  s,
 		loadKeyFunc: loadKeyFunc,
 		LoadFunc:    loadFunc,
 		SaveFunc:    saveFunc,

@@ -73,6 +73,11 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	fieldScript := x.toColumnSQL(cols)
 	script = append(script, fieldScript...)
 
+	if entity.SoftDelete != nil {
+		s := entity.SoftDelete.Schema
+		script = append(script, fmt.Sprintf("`%s` %s", FieldNameSoftDelete, s.DataType))
+	}
+
 	// Index primary key field
 	script = append(script, fmt.Sprintf(
 		"CONSTRAINT `%s` UNIQUE (`%s`, `%s`)",

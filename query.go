@@ -58,13 +58,14 @@ func newFilter(f string, o string, v interface{}, om *operatorMapper) *Filter {
 
 // Query :
 type Query struct {
-	table     *Table
-	ancestors []*datastore.Key
-	filters   []*Filter
-	orders    []string
-	limit     uint
-	offset    uint
-	errs      []error
+	table      *Table
+	ancestors  []*datastore.Key
+	filters    []*Filter
+	orders     []string
+	limit      uint
+	offset     uint
+	errs       []error
+	hasTrashed bool
 }
 
 func newQuery(t *Table) *Query {
@@ -168,6 +169,12 @@ func (q *Query) Order(fields interface{}) *Query {
 
 	}
 
+	return q
+}
+
+// WithTrashed :
+func (q *Query) WithTrashed() *Query {
+	q.hasTrashed = true
 	return q
 }
 

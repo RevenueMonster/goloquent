@@ -242,6 +242,13 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 	return stmt, nil
 }
 
+func (x *SQLAdapter) appendStatement(e *Entity, q *Query) *Query {
+	if e.SoftDelete != nil && !q.hasTrashed {
+		q.filters = append(q.filters, newFilter(FieldNameSoftDelete, "=", nil, operators["!="]))
+	}
+	return q
+}
+
 // toColumnSQL :
 func (x *SQLAdapter) toColumnSQL(cols []*Field) []string {
 	script := make([]string, 0)
