@@ -50,6 +50,8 @@ func newField(s reflect.StructField, tag *Tag, name []string, index []int, schem
 		panic(ErrUnsupportDataType)
 	}
 
+	schema.IsNullable = tag.IsNullable()
+
 	f := &Field{
 		Name:         strings.Join(name, "."),
 		FieldName:    tag.FieldName,
