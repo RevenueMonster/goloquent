@@ -236,14 +236,19 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	iv := reflect.Indirect(reflect.ValueOf(modelStruct))
 	iv.Set(slice)
 
-	// Get last record
-	last := slice.Index(slice.Len() - 1)
-	fmt.Println(last)
-
 	// Sync pagination data
 	p.Total = total
 	p.Count = uint(len(results))
-	p.Cursor = ""
+
+	if entity.PrimaryKey != nil {
+		// Get last record
+		last := slice.Index(slice.Len() - 1)
+		r := reflect.Indirect(last)
+		pk := r.FieldByIndex(entity.PrimaryKey.Index)
+		if pk.IsValid() {
+			p.Cursor = pk.Interface().(*datastore.Key).Encode()
+		}
+	}
 
 	return nil
 }

@@ -568,7 +568,8 @@ func (x *SQLAdapter) RunInTransaction(table *Table, callback func(*Connection) e
 	}
 	return func(c *Connection, txn *sql.Tx) error {
 		if err := callback(c); err != nil {
-			return txn.Rollback()
+			txn.Rollback()
+			return err
 		}
 		return txn.Commit()
 	}(c, txn)
