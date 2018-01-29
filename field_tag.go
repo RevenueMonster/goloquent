@@ -38,6 +38,11 @@ func (t *Tag) IsUnique() bool {
 	return t.options[tagUnique]
 }
 
+// IsNullable : (sql exclusive)
+func (t *Tag) IsNullable() bool {
+	return t.options[tagNullable]
+}
+
 // IsUnsigned : (sql exclusive)
 func (t *Tag) IsUnsigned() bool {
 	return t.options[tagUnsigned]
@@ -69,6 +74,7 @@ func newTag(r reflect.StructField) *Tag {
 			tagOmitEmpty: false,
 			tagNoIndex:   false,
 			tagFlatten:   false,
+			tagNullable:  false,
 			tagUnique:    false, // Extra
 			tagUnsigned:  false, // Extra
 			tagLongText:  false, // Extra

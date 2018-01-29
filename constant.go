@@ -33,6 +33,7 @@ const (
 	tagOmitEmpty        = "omitempty"
 	tagNoIndex          = "noindex"
 	tagFlatten          = "flatten"
+	tagNullable         = "nullable"
 	tagUnsigned         = "unsigned" // extra
 	tagUnique           = "unique"   // extra
 	tagLongText         = "longtext" // extra
