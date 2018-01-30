@@ -19,14 +19,24 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 		return err
 	}
 
+	var stmt *Statement
+	stmt, err = x.CompileStatement(query)
+	if err != nil {
+		return err
+	}
+
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	if entity.SoftDelete != nil {
-		cond += fmt.Sprintf(" AND `%s` IS NULL", FieldNameSoftDelete)
+	q := fmt.Sprintf("SELECT * FROM `%s` WHERE %s", table, cond)
+	if len(stmt.Where) > 0 {
+		q += fmt.Sprintf(" AND %s", strings.Join(stmt.Where, " AND "))
 	}
+	if entity.SoftDelete != nil {
+		q += fmt.Sprintf(" AND `%s` IS NULL", FieldNameSoftDelete)
+	}
+	q += " LIMIT 1;"
 
-	q := fmt.Sprintf("SELECT * FROM `%s` WHERE %s LIMIT 1;", table, cond)
 	fmt.Println("************* START FIND QUERY ************")
 	fmt.Println(color.GreenString(q))
 	fmt.Println("************* ENDED FIND QUERY ************")

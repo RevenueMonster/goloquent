@@ -85,6 +85,11 @@ func (q *Query) First(modelStruct interface{}) error {
 	return newBuilder(q).First(modelStruct)
 }
 
+// Find :
+func (q *Query) Find(key *datastore.Key, modelStruct interface{}) error {
+	return newBuilder(q).Find(key, modelStruct)
+}
+
 // Get :
 func (q *Query) Get(modelStruct interface{}) error {
 	return newBuilder(q).Get(modelStruct)

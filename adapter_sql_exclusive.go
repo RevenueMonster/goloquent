@@ -33,6 +33,8 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
+	fmt.Println(results)
+
 	if len(results) > 0 {
 		columnList := make(map[string]bool, 0)
 		for _, item := range results {
@@ -68,18 +70,6 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 
 		return nil
 	}
-
-	// 	existed := make(map[string]bool, 0)
-	// 	for _, data := range results {
-	// 		k := string(data["COLUMN_NAME"])
-	// 		k = strings.ToLower(k)
-	// 		existed[k] = true
-	// 	}
-
-	// 	fmt.Println(existed)
-
-	// 	return nil
-	// }
 
 	script := make([]string, 0)
 
