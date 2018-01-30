@@ -1,6 +1,7 @@
 package goloquent
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -205,33 +206,32 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	}
 
 	sql := fmt.Sprintf("SELECT * FROM `%s`", table)
-	if p.Cursor != "" {
-		// var cursorKey *datastore.Key
-		// datastore.DecodeKey
-		// cursorKey, _ := datastore.DecodeCursor(p.Cursor)
-		// if err != nil {
-		// 	return errors.New("goloquent: invalid cursor key")
-		// }
-		// fmt.Println(cursorKey.String())
-
-		// fmt.Println("debug : ", stringPrimaryKey(cursorKey)+cursorKey.Parent.String())
-		// stmt.Where = append(stmt.Where, fmt.Sprintf(
-		// 	"CONCAT(`%s`,`%s`) >= %q",
-		// 	FieldNameKey, FieldNameParent, stringPrimaryKey(cursorKey)+cursorKey.Parent.String()))
-	}
-
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
 	if len(stmt.Order) > 0 {
 		sql += fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ","))
 	}
+
+	if p.Cursor != "" {
+		var cursorKey *datastore.Key
+		cursorKey, err = datastore.DecodeKey(p.Cursor)
+		if err != nil {
+			return errors.New("goloquent: invalid cursor key")
+		}
+		sql = fmt.Sprintf(
+			"SELECT * FROM (%s) AS tmp WHERE CONCAT(tmp.`%s`, tmp.`%s`) >= %q",
+			sql, FieldNameParent, FieldNameKey,
+			cursorKey.Parent.String()+stringPrimaryKey(cursorKey))
+	}
+
 	cap := p.Limit
 	if cap <= 0 {
 		cap = DefaultTotalRecord
 	} else if cap > MaxRecord {
 		cap = MaxRecord
 	}
+	cap++ // extra one record for pagination
 	sql += fmt.Sprintf(" LIMIT %d", cap)
 
 	var total uint
@@ -260,15 +260,10 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		return err
 	}
 
-	iv := reflect.Indirect(reflect.ValueOf(modelStruct))
-	iv.Set(slice)
-
-	// Sync pagination data
-	p.Total = total
-	p.Count = uint(len(results))
-
-	if p.Total > p.Count {
-		if entity.PrimaryKey != nil {
+	copy := reflect.MakeSlice(slice.Type(), slice.Len(), slice.Len())
+	if slice.Len() > 0 {
+		p.Count = uint(slice.Len())
+		if slice.Len() > int(p.Limit) && entity.PrimaryKey != nil {
 			// Get last record
 			last := slice.Index(slice.Len() - 1)
 			r := reflect.Indirect(last)
@@ -276,8 +271,17 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 			if pk.IsValid() {
 				p.Cursor = pk.Interface().(*datastore.Key).Encode()
 			}
+			copy = reflect.MakeSlice(slice.Type(), slice.Len()-1, slice.Len()-1)
 		}
 	}
+
+	reflect.Copy(copy, slice)
+
+	// Sync pagination data
+	p.Total = total
+
+	iv := reflect.Indirect(reflect.ValueOf(modelStruct))
+	iv.Set(copy)
 
 	return nil
 }

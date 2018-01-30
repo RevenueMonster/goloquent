@@ -234,6 +234,8 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 		}
 	}
 
+	order = append(order, fmt.Sprintf("CONCAT(`%s`,`%s`) ASC", FieldNameParent, FieldNameKey))
+
 	stmt := &Statement{
 		Where: where,
 		Order: order,
