@@ -212,7 +212,9 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		sql += fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ","))
 	}
 	cap := p.Limit
-	if cap <= 0 || cap > MaxRecord {
+	if cap <= 0 {
+		cap = DefaultTotalRecord
+	} else if cap > MaxRecord {
 		cap = MaxRecord
 	}
 	sql += fmt.Sprintf(" LIMIT %d", cap)

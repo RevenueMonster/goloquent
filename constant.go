@@ -14,11 +14,12 @@ const (
 	FieldNameParent     = "$Parent"
 	FieldNamePrimaryKey = "$PrimaryKey"
 	FieldNameSoftDelete = "DeletedAt"
+	DefaultTotalRecord  = uint(100)
 	IDLength            = 20
 	KeyLength           = 767
 	TextLength          = 255
 	MaxKeyLength        = 1500
-	MaxRecord           = uint(5000)
+	MaxRecord           = uint(500)
 	MaxSeed             = int64(999999999999999999)
 	MinSeed             = int64(50000000000000)
 	MySQLDateTimeFormat = "2006-01-02 15:04:05"
