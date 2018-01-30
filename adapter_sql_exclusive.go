@@ -90,7 +90,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	// Index primary key field
 	script = append(script, fmt.Sprintf(
 		"CONSTRAINT `%s` UNIQUE (`%s`, `%s`)",
-		FieldNamePrimaryKey, FieldNameKey, FieldNameParent))
+		FieldNamePrimaryKey, FieldNameParent, FieldNameKey))
 
 	sql = fmt.Sprintf(
 		"CREATE TABLE `%s` (%s) CHARACTER SET `%s` COLLATE `%s`;",

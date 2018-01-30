@@ -1,7 +1,6 @@
 package goloquent
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -207,14 +206,18 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 
 	sql := fmt.Sprintf("SELECT * FROM `%s`", table)
 	if p.Cursor != "" {
-		var cursorKey *datastore.Key
-		cursorKey, err = datastore.DecodeKey(p.Cursor)
-		if err != nil {
-			return errors.New("goloquent: invalid cursor key")
-		}
-		stmt.Where = append(stmt.Where, fmt.Sprintf(
-			"CONCAT(`%s`,`%s`) >= %q",
-			FieldNameKey, FieldNameParent, stringPrimaryKey(cursorKey)+cursorKey.Parent.String()))
+		// var cursorKey *datastore.Key
+		// datastore.DecodeKey
+		// cursorKey, _ := datastore.DecodeCursor(p.Cursor)
+		// if err != nil {
+		// 	return errors.New("goloquent: invalid cursor key")
+		// }
+		// fmt.Println(cursorKey.String())
+
+		// fmt.Println("debug : ", stringPrimaryKey(cursorKey)+cursorKey.Parent.String())
+		// stmt.Where = append(stmt.Where, fmt.Sprintf(
+		// 	"CONCAT(`%s`,`%s`) >= %q",
+		// 	FieldNameKey, FieldNameParent, stringPrimaryKey(cursorKey)+cursorKey.Parent.String()))
 	}
 
 	if len(stmt.Where) > 0 {
