@@ -33,8 +33,6 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	fmt.Println(results)
-
 	if len(results) > 0 {
 		columnList := make(map[string]bool, 0)
 		for _, item := range results {
