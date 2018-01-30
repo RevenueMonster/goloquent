@@ -1,6 +1,7 @@
 package goloquent
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -205,6 +206,17 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	}
 
 	sql := fmt.Sprintf("SELECT * FROM `%s`", table)
+	if p.Cursor != "" {
+		var cursorKey *datastore.Key
+		cursorKey, err = datastore.DecodeKey(p.Cursor)
+		if err != nil {
+			return errors.New("goloquent: invalid cursor key")
+		}
+		stmt.Where = append(stmt.Where, fmt.Sprintf(
+			"CONCAT(`%s`,`%s`) >= %q",
+			FieldNameKey, FieldNameParent, stringPrimaryKey(cursorKey)+cursorKey.Parent.String()))
+	}
+
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -252,13 +264,15 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	p.Total = total
 	p.Count = uint(len(results))
 
-	if entity.PrimaryKey != nil {
-		// Get last record
-		last := slice.Index(slice.Len() - 1)
-		r := reflect.Indirect(last)
-		pk := r.FieldByIndex(entity.PrimaryKey.Index)
-		if pk.IsValid() {
-			p.Cursor = pk.Interface().(*datastore.Key).Encode()
+	if p.Total > p.Count {
+		if entity.PrimaryKey != nil {
+			// Get last record
+			last := slice.Index(slice.Len() - 1)
+			r := reflect.Indirect(last)
+			pk := r.FieldByIndex(entity.PrimaryKey.Index)
+			if pk.IsValid() {
+				p.Cursor = pk.Interface().(*datastore.Key).Encode()
+			}
 		}
 	}
 
