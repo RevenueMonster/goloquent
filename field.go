@@ -189,11 +189,6 @@ func ListFields(t reflect.Type) (*Field, *Field, []*Field, error) {
 				continue
 			}
 
-			if schema, isLeaf := getSchema(tag, t); isLeaf {
-				fields = append(fields, newField(f, tag, col, index, schema))
-				continue
-			}
-
 			// if it's flatten just continue on next
 			if tag.IsFlatten() {
 				if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
@@ -212,6 +207,11 @@ func ListFields(t reflect.Type) (*Field, *Field, []*Field, error) {
 					Type:   t,
 					Index:  index,
 				})
+				continue
+			}
+
+			if schema, isLeaf := getSchema(tag, t); isLeaf {
+				fields = append(fields, newField(f, tag, col, index, schema))
 				continue
 			}
 
