@@ -16,6 +16,7 @@ import (
 type SQLAdapter struct {
 	table  string
 	mode   string
+	dbName string
 	client *sql.DB
 	txn    *sql.Tx
 }

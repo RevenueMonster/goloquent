@@ -50,14 +50,17 @@ func newMySQL(connStr string) (*Connection, error) {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(connStr)
 	if e := client.Ping(); e != nil {
 		return nil, e
 	}
+	paths := strings.Split(connStr, "/")
 	return &Connection{
 		db: dbMySQL,
 		adapter: &SQLAdapter{
 			mode:   modeNormal,
 			client: client,
+			dbName: paths[len(paths)-1],
 		},
 	}, nil
 }
