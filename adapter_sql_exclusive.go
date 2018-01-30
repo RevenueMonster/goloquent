@@ -19,13 +19,55 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	}
 
 	cols := entity.GetFields()
-	// TODO: add dbname as prefix
-	// sql := fmt.Sprintf("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = %q;", table)
-	// results := make([]map[string][]byte, 0)
-	// results, err = x.ExecQuery(sql)
+	sql := fmt.Sprintf(
+		"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %q AND TABLE_NAME = %q;",
+		x.dbName, table)
 
-	// if len(results) > 0 {
-	// 	script := make([]string, 0)
+	fmt.Println("************* START MIGRATION QUERY ************")
+	fmt.Println(color.GreenString(sql))
+	fmt.Println("************* ENDED MIGRATION QUERY ************")
+	results := make([]map[string][]byte, 0)
+	results, err = x.ExecQuery(sql)
+
+	if err != nil {
+		return err
+	}
+
+	if len(results) > 0 {
+		columnList := make(map[string]bool, 0)
+		for _, item := range results {
+			columnList[strings.ToLower(string(item["COLUMN_NAME"]))] = true
+		}
+
+		newCols := make([]*Field, 0)
+		for i, fs := range cols {
+			_, isExist := columnList[strings.ToLower(fs.Name)]
+			if !isExist {
+				newCols = append(newCols, cols[i])
+			}
+		}
+
+		script := x.toColumnSQL(newCols)
+		if len(script) <= 0 {
+			return nil
+		}
+
+		for i, item := range script {
+			script[i] = fmt.Sprintf("ADD %s", item)
+		}
+
+		sql = fmt.Sprintf("ALTER TABLE `%s` %s;", table, strings.Join(script, ","))
+
+		fmt.Println("************* START MIGRATION ALTER QUERY ************")
+		fmt.Println(color.GreenString(sql))
+		fmt.Println("************* ENDED MIGRATION ALTER QUERY ************")
+
+		if _, err := x.Exec(sql); err != nil {
+			return err
+		}
+
+		return nil
+	}
 
 	// 	existed := make(map[string]bool, 0)
 	// 	for _, data := range results {
@@ -34,28 +76,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	// 		existed[k] = true
 	// 	}
 
-	// 	fieldScript := x.toColumnSql(cols)
-	// 	script = append(script, fieldScript...)
-
-	// 	if len(script) <= 0 {
-	// 		return nil
-	// 	}
-
-	// 	for i, each := range script {
-	// 		script[i] = fmt.Sprintf("ADD %s", each)
-	// 	}
-
 	// 	fmt.Println(existed)
-
-	// 	sql = fmt.Sprintf("ALTER TABLE %s %s;", table, strings.Join(script, ","))
-
-	// 	fmt.Println("************* START MIGRATION ALTER QUERY ************")
-	// 	fmt.Println(color.GreenString(sql))
-	// 	fmt.Println("************* ENDED MIGRATION ALTER QUERY ************")
-
-	// 	if _, err := x.Exec(sql); err != nil {
-	// 		return err
-	// 	}
 
 	// 	return nil
 	// }
@@ -83,7 +104,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		"CONSTRAINT `%s` UNIQUE (`%s`, `%s`)",
 		FieldNamePrimaryKey, FieldNameKey, FieldNameParent))
 
-	sql := fmt.Sprintf(
+	sql = fmt.Sprintf(
 		"CREATE TABLE `%s` (%s) CHARACTER SET `%s` COLLATE `%s`;",
 		table, strings.Join(script, ","), utf8CharSet.Encoding, utf8CharSet.Collation)
 
