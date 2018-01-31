@@ -23,9 +23,10 @@ type SQLAdapter struct {
 
 // Statement :
 type Statement struct {
-	Where []string
-	Order []string
-	Limit uint
+	Where  []string
+	Order  []string
+	Limit  uint
+	Locked string
 }
 
 var _ Adapter = &SQLAdapter{}
@@ -234,12 +235,26 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 		}
 	}
 
-	order = append(order, fmt.Sprintf("CONCAT(`%s`,`%s`) ASC", FieldNameParent, FieldNameKey))
+	order = append(order, fmt.Sprintf("CONCAT(`%s`,%q,`%s`) ASC", FieldNameParent, "/", FieldNameKey))
+
+	locked := ""
+	if x.mode == modeTransaction {
+		switch query.lockMode {
+		case lockForShare:
+			locked = "LOCK IN SHARE MODE"
+
+		case lockForUpdate:
+			locked = "FOR UPDATE"
+
+		default:
+		}
+	}
 
 	stmt := &Statement{
-		Where: where,
-		Order: order,
-		Limit: query.limit,
+		Where:  where,
+		Order:  order,
+		Limit:  query.limit,
+		Locked: locked,
 	}
 
 	return stmt, nil

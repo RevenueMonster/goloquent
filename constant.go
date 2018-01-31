@@ -23,6 +23,8 @@ const (
 	MaxSeed             = int64(9223372036854775807)
 	MinSeed             = int64(100000000000)
 	MySQLDateTimeFormat = "2006-01-02 15:04:05"
+	lockForUpdate       = "update"
+	lockForShare        = "share"
 	dbDataStore         = "datastore"
 	dbMySQL             = "mysql"
 	dbHybrid            = "hybrid"

@@ -62,6 +62,7 @@ type Query struct {
 	ancestors  []*datastore.Key
 	filters    []*Filter
 	orders     []string
+	lockMode   string
 	limit      uint
 	offset     uint
 	errs       []error
@@ -124,6 +125,18 @@ func (q *Query) Ancestor(ancestorKey *datastore.Key) *Query {
 // 	q.filters = append(q.filters, newFilter(field, "NOT LIKE", value, operators["NOT LIKE"]))
 // 	return q
 // }
+
+// LockForShared :
+func (q *Query) LockForShared() *Getter {
+	q.lockMode = lockForShare
+	return newGetter(q)
+}
+
+// LockForUpdate :
+func (q *Query) LockForUpdate() *Getter {
+	q.lockMode = lockForUpdate
+	return newGetter(q)
+}
 
 // Where :
 func (q *Query) Where(field string, o string, value interface{}) *Query {

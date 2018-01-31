@@ -114,6 +114,16 @@ func (t *Table) SoftDelete(key *datastore.Key) error {
 	return newBuilder(newQuery(t)).SoftDelete(key)
 }
 
+// LockForShared :
+func (t *Table) LockForShared() *Getter {
+	return newQuery(t).LockForShared()
+}
+
+// LockForUpdate :
+func (t *Table) LockForUpdate() *Getter {
+	return newQuery(t).LockForUpdate()
+}
+
 // Migrate : (SQL exclusive actions)
 func (t *Table) Migrate(modelStruct interface{}) error {
 	adapter, err := t.getSQLAdapter()
