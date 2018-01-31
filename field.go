@@ -84,9 +84,9 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 
 	switch t {
 	case typeOfString:
-		schema = &FieldSchema{fmt.Sprintf("varchar(%d)", TextLength), "", true, false, false, utf8CharSet}
+		schema = &FieldSchema{fmt.Sprintf("varchar(%d)", TextLength), "", true, false, tag.IsNullable(), utf8CharSet}
 		if tag.IsLongText() {
-			schema = &FieldSchema{"text", nil, true, false, false, utf8CharSet}
+			schema = &FieldSchema{"text", nil, true, false, tag.IsNullable(), utf8CharSet}
 		}
 
 	case typeOfBool:

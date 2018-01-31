@@ -62,9 +62,11 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 
 		val := "NULL"
 		if str != nil {
-			val = fmt.Sprintf("%s", *str)
-			if fs.Schema.IsEscape {
-				val = fmt.Sprintf("%q", *str)
+			if !(isZero(*str) && fs.Schema.IsNullable) {
+				val = fmt.Sprintf("%s", *str)
+				if fs.Schema.IsEscape {
+					val = fmt.Sprintf("%q", *str)
+				}
 			}
 		}
 
@@ -155,10 +157,11 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 
 			val := "NULL"
 			if str != nil {
-				if fs.Schema.IsEscape {
-					val = fmt.Sprintf("%q", *str)
-				} else {
+				if !(isZero(*str) && fs.Schema.IsNullable) {
 					val = fmt.Sprintf("%s", *str)
+					if fs.Schema.IsEscape {
+						val = fmt.Sprintf("%q", *str)
+					}
 				}
 			}
 
@@ -230,9 +233,11 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 
 		val := "NULL"
 		if str != nil {
-			val = fmt.Sprintf("%s", *str)
-			if fs.Schema.IsEscape {
-				val = fmt.Sprintf("%q", *str)
+			if !(isZero(*str) && fs.Schema.IsNullable) {
+				val = fmt.Sprintf("%s", *str)
+				if fs.Schema.IsEscape {
+					val = fmt.Sprintf("%q", *str)
+				}
 			}
 		}
 
@@ -325,9 +330,11 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 
 			val := "NULL"
 			if str != nil {
-				val = fmt.Sprintf("%s", *str)
-				if fs.Schema.IsEscape {
-					val = fmt.Sprintf("%q", *str)
+				if !(isZero(*str) && fs.Schema.IsNullable) {
+					val = fmt.Sprintf("%s", *str)
+					if fs.Schema.IsEscape {
+						val = fmt.Sprintf("%q", *str)
+					}
 				}
 			}
 
@@ -401,9 +408,11 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 
 		val := "NULL"
 		if str != nil {
-			val = fmt.Sprintf("%s", *str)
-			if fs.Schema.IsEscape {
-				val = fmt.Sprintf("%q", *str)
+			if !(isZero(*str) && fs.Schema.IsNullable) {
+				val = fmt.Sprintf("%s", *str)
+				if fs.Schema.IsEscape {
+					val = fmt.Sprintf("%q", *str)
+				}
 			}
 		}
 
