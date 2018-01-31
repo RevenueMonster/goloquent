@@ -181,10 +181,27 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 	if len(query.filters) > 0 {
 		for _, f := range query.filters {
 			if f.Field == tagKey {
-				k := f.Value.(*datastore.Key)
-				strKey := stringPrimaryKey(k)
-				q := fmt.Sprintf("(`%s` = %q AND `%s` = %q)",
-					FieldNameKey, strKey, FieldNameParent, k.Parent.String())
+				v := reflect.ValueOf(f.Value)
+				q := ""
+				switch v.Kind() {
+				case reflect.Slice, reflect.Array:
+					strKeys := make([]string, 0)
+					for i := 0; i < v.Len(); i++ {
+						k := v.Index(i).Interface().(*datastore.Key)
+						strKeys = append(strKeys,
+							fmt.Sprintf("%q", k.Parent.String()+"/"+stringPrimaryKey(k)))
+					}
+					q = fmt.Sprintf(
+						"CONCAT(`%s`,%q,`%s`) IN (%s)",
+						FieldNameParent, "/", FieldNameKey,
+						strings.Join(strKeys, ","))
+
+				default:
+					k := f.Value.(*datastore.Key)
+					strKey := stringPrimaryKey(k)
+					q = fmt.Sprintf("(`%s` = %q AND `%s` = %q)",
+						FieldNameKey, strKey, FieldNameParent, k.Parent.String())
+				}
 				where = append(where, q)
 				continue
 			}
