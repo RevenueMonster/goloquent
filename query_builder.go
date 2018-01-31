@@ -58,6 +58,42 @@ func (b *Builder) First(modelStruct interface{}) error {
 
 // Paginate :
 func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
+	if p.Filter != nil {
+		filters := make([]*Filter, 0)
+		v := reflect.Indirect(reflect.ValueOf(p.Filter))
+		switch v.Kind() {
+		case reflect.Struct:
+			_, _, fields, err := ListFields(v.Type())
+			if err != nil {
+				return err
+			}
+
+			for _, item := range fields {
+				f := v.FieldByIndex(item.Index)
+				if !f.IsValid() || isZero(f.Interface()) {
+					continue
+				}
+				filters = append(filters, newFilter(item.Name, "=", f.Interface(), operators["="]))
+			}
+
+		// TODO: support for map filter
+		// case reflect.Map:
+		// for _, key := range v.MapKeys() {
+		// 	f := v.MapIndex(key)
+		// 	t := reflect.TypeOf(f.Interface())
+		// 	if t.Kind() == reflect.Ptr {
+		// 		t = t.Elem()
+		// 	}
+		// 	filters = append(filters, newFilter(t.Name(), "=", f.Interface(), operators["="]))
+		// }
+
+		default:
+			return errors.New("goloquent: invalid paginate filter datatype")
+		}
+
+		b.query.filters = append(b.query.filters, filters...)
+	}
+
 	return b.getAdapter().Paginate(b.query, p, modelStruct)
 }
 
