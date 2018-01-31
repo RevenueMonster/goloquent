@@ -262,17 +262,21 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 
 	copy := reflect.MakeSlice(slice.Type(), slice.Len(), slice.Len())
 	if slice.Len() > 0 {
-		p.Count = uint(slice.Len())
+		count := uint(slice.Len())
 		if slice.Len() > int(p.Limit) && entity.PrimaryKey != nil {
 			// Get last record
-			last := slice.Index(slice.Len() - 1)
+			count--
+			last := slice.Index(int(count))
 			r := reflect.Indirect(last)
 			pk := r.FieldByIndex(entity.PrimaryKey.Index)
 			if pk.IsValid() {
 				p.Cursor = pk.Interface().(*datastore.Key).Encode()
 			}
-			copy = reflect.MakeSlice(slice.Type(), slice.Len()-1, slice.Len()-1)
+			copy = reflect.MakeSlice(slice.Type(), int(count), int(count))
+		} else {
+			p.Cursor = ""
 		}
+		p.Count = count
 	}
 
 	reflect.Copy(copy, slice)
