@@ -261,9 +261,9 @@ func (x *SQLAdapter) toColumnSQL(cols []*Field) []string {
 		// tag := each.Tag
 		settings := make([]string, 0)
 
-		// if s.IsUnsigned && tag.IsUnsigned() {
-		// 	settings = append(settings, "UNSIGNED")
-		// }
+		if s.IsUnsigned {
+			settings = append(settings, "UNSIGNED")
+		}
 
 		// Set character set
 		if s.CharSet != nil {
