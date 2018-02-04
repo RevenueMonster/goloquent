@@ -488,7 +488,7 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 
 	sql := fmt.Sprintf("UPDATE `%s` SET %s", table, strings.Join(vals, ","))
 	if len(stmt.Where) > 0 {
-		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, ","))
+		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
 	sql += ";"
 
