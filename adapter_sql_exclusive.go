@@ -40,6 +40,10 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		}
 
 		newCols := make([]*Field, 0)
+		if entity.SoftDelete != nil {
+			entity.SoftDelete.Name = FieldNameSoftDelete
+			newCols = append(newCols, entity.SoftDelete)
+		}
 		for i, fs := range cols {
 			_, isExist := columnList[strings.ToLower(fs.Name)]
 			if !isExist {
