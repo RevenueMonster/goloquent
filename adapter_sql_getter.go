@@ -21,6 +21,7 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 		return err
 	}
 
+	query = x.appendStatement(entity, query)
 	var stmt *Statement
 	stmt, err = x.CompileStatement(query)
 	if err != nil {
@@ -33,9 +34,6 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 	q := fmt.Sprintf("SELECT * FROM `%s` WHERE %s", table, cond)
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" AND %s", strings.Join(stmt.Where, " AND "))
-	}
-	if entity.SoftDelete != nil {
-		q += fmt.Sprintf(" AND `%s` IS NULL", FieldNameSoftDelete)
 	}
 	q += " LIMIT 1"
 	if len(stmt.Locked) > 0 {

@@ -44,7 +44,7 @@ const (
 
 // SoftDelete :
 type SoftDelete struct {
-	DeletedDateTime time.Time `datastore:"DeletedAt" json:"-" xml:"-"`
+	DeletedDateTime time.Time `goloquent:"DeletedAt" json:"-" xml:"-"`
 }
 
 var fieldNameReserved = []string{
