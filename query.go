@@ -139,8 +139,22 @@ func (q *Query) LockForUpdate() *Getter {
 }
 
 // Where :
-func (q *Query) Where(field string, o string, value interface{}) *Query {
-	field = strings.TrimSpace(field)
+func (q *Query) Where(field interface{}, o string, value interface{}) *Query {
+	strField := ""
+	switch field.(type) {
+	case string:
+		strField = field.(string)
+
+	case RawQuery:
+		rq := field.(*RawQuery)
+		strField = rq.Name
+
+	default:
+		q.errs = append(q.errs, errors.New("goloquent: invalid field datatype"))
+		return q
+	}
+
+	strField = strings.TrimSpace(strField)
 	o = strings.TrimSpace(strings.ToUpper(o))
 	m, isOK := operators[o]
 	if !isOK {
@@ -156,14 +170,14 @@ func (q *Query) Where(field string, o string, value interface{}) *Query {
 			(v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
 			f := make([]*Filter, v.Len(), v.Len())
 			for i := 0; i < v.Len(); i++ {
-				f[i] = newFilter(field, o, v.Index(i).Interface(), m)
+				f[i] = newFilter(strField, o, v.Index(i).Interface(), m)
 			}
 			q.filters = append(q.filters, f...)
 			return q
 		}
 	}
 
-	q.filters = append(q.filters, newFilter(field, o, value, m))
+	q.filters = append(q.filters, newFilter(strField, o, value, m))
 
 	return q
 }

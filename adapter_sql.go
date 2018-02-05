@@ -119,7 +119,7 @@ func (x *SQLAdapter) Exec(q string) (sql.Result, error) {
 }
 
 // ExecQuery :
-func (x *SQLAdapter) ExecQuery(q string) ([]map[string][]byte, error) {
+func (x *SQLAdapter) ExecQuery(q string, args ...interface{}) ([]map[string][]byte, error) {
 	r := make([]map[string][]byte, 0)
 	var (
 		rows *sql.Rows
@@ -127,9 +127,9 @@ func (x *SQLAdapter) ExecQuery(q string) ([]map[string][]byte, error) {
 	)
 
 	if x.mode == modeNormal {
-		rows, err = x.client.Query(q)
+		rows, err = x.client.Query(q, args...)
 	} else {
-		rows, err = x.txn.Query(q)
+		rows, err = x.txn.Query(q, args...)
 	}
 
 	if err != nil {

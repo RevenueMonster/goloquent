@@ -3,11 +3,17 @@ package goloquent
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
 	"cloud.google.com/go/datastore"
 )
+
+// RawQuery :
+type RawQuery struct {
+	Name string
+}
 
 // Connection :
 type Connection struct {
@@ -28,6 +34,15 @@ func (c *Connection) Table(name string) *Table {
 // RunInTransaction :
 func (c *Connection) RunInTransaction(callback func(*Connection) error) error {
 	return newBuilder(newQuery(newTable("", c))).RunInTransaction(callback)
+}
+
+// Statement :
+func (c *Connection) Statement(query string, args ...interface{}) ([]map[string][]byte, error) {
+	adapter, isOK := c.adapter.(*SQLAdapter)
+	if !isOK {
+		panic(errors.New("goloquent: unsupported feature"))
+	}
+	return adapter.ExecQuery(query, args...)
 }
 
 func newDatastore(connStr string) (*Connection, error) {
@@ -69,6 +84,11 @@ var connPool = map[string]map[string]*Connection{}
 var dbTypes = map[string]func(string) (*Connection, error){
 	dbDataStore: newDatastore,
 	dbMySQL:     newMySQL,
+}
+
+// Raw : raw query
+func Raw(field string) *RawQuery {
+	return &RawQuery{Name: field}
 }
 
 // Open : open connection to database
