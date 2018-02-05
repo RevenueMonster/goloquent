@@ -66,6 +66,7 @@ var (
 	ErrParsePrimaryKey      = errors.New("goloquent: unable to parse, invalid key format")
 	utf8CharSet             = &CharSet{"utf8", "utf8_unicode_ci"}
 	latin2CharSet           = &CharSet{"latin2", "latin2_general_ci"}
+	isDebug                 = false
 )
 
 var (

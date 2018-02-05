@@ -105,7 +105,7 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 		schema = &FieldSchema{"decimal(10,2)", 0, false, tag.IsUnsigned(), false, nil}
 
 	case typeOfByte:
-		schema = &FieldSchema{"blob", nil, true, false, false, nil}
+		schema = &FieldSchema{"mediumblob", nil, true, false, false, nil}
 
 	case typeOfSoftDelete:
 		schema = &FieldSchema{"datetime", nil, true, false, true, nil}

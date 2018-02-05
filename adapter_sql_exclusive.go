@@ -23,9 +23,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %q AND TABLE_NAME = %q;",
 		x.dbName, table)
 
-	fmt.Println("************* START MIGRATION QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED MIGRATION QUERY ************")
+	go x.sqlDebug(sql)
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(sql)
 
@@ -100,9 +98,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		"CREATE TABLE `%s` (%s) CHARACTER SET `%s` COLLATE `%s`;",
 		table, strings.Join(script, ","), utf8CharSet.Encoding, utf8CharSet.Collation)
 
-	fmt.Println("************* START MIGRATION QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED MIGRATION QUERY ************")
+	go x.sqlDebug(sql)
 
 	if _, err := x.Exec(sql); err != nil {
 		return err
@@ -115,10 +111,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 func (x *SQLAdapter) Drop(query *Query) error {
 	sql := fmt.Sprintf("DROP TABLE `%s`", query.table.name)
 
-	fmt.Println("************* START DROP TABLE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED DROP TABLE QUERY ************")
-
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -130,10 +123,7 @@ func (x *SQLAdapter) Drop(query *Query) error {
 func (x *SQLAdapter) DropIfExists(query *Query) error {
 	sql := fmt.Sprintf("DROP TABLE IF EXISTS `%s`", query.table.name)
 
-	fmt.Println("************* START DROP TABLE IF EXISTS QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED DROP TABLE IF EXISTS QUERY ************")
-
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -146,9 +136,7 @@ func (x *SQLAdapter) UniqueIndex(query *Query, fields ...string) error {
 	table := query.table.name
 	sql := fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON `%s` (%s);", strings.Join(fields, "_"), table, strings.Join(fields, ","))
 
-	fmt.Println("************* START DROP TABLE IF EXISTS QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED DROP TABLE IF EXISTS QUERY ************")
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}

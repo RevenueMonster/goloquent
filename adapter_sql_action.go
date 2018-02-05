@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fatih/color"
-
 	"cloud.google.com/go/datastore"
 )
 
@@ -78,10 +76,7 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 		"INSERT INTO `%s` (%v) VALUES (%v);",
 		table, strings.Join(fields, ","), strings.Join(vals, ","))
 
-	fmt.Println("************* START CREATE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED CREATE QUERY ************")
-
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -178,10 +173,7 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 		"INSERT INTO `%s` (%s) VALUES %s;",
 		table, strings.Join(fields, ","), strings.Join(records, ","))
 
-	fmt.Println("************* START CREATE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED CREATE QUERY ************")
-
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -250,10 +242,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 		"INSERT INTO `%s` (%v) VALUES (%v) ON DUPLICATE KEY UPDATE %s;",
 		table, strings.Join(fields, ","), strings.Join(vals, ","), strings.Join(where, ","))
 
-	fmt.Println("************* START CREATE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED CREATE QUERY ************")
-
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -353,10 +342,7 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		"INSERT INTO `%s` (%s) VALUES %s ON DUPLICATE KEY UPDATE %s;",
 		table, strings.Join(fields, ","), strings.Join(records, ","), strings.Join(colNames, ","))
 
-	fmt.Println("************* START CREATE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED CREATE QUERY ************")
-
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -432,10 +418,7 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 		"UPDATE `%s` SET %s WHERE %s;",
 		table, strings.Join(vals, ","), cond)
 
-	fmt.Println("************* START CREATE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED CREATE QUERY ************")
-
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -492,10 +475,7 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 	}
 	sql += ";"
 
-	fmt.Println("************* START UPDATE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED UPDATE QUERY ************")
-
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -509,9 +489,7 @@ func (x *SQLAdapter) Delete(query *Query, key *datastore.Key) error {
 		"WHERE `%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
 	sql := fmt.Sprintf("DELETE FROM `%s` %s", query.table.name, where)
-	fmt.Println("************* START DELETE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED DELETE QUERY ************")
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -536,9 +514,7 @@ func (x *SQLAdapter) DeleteMulti(query *Query, keys []*datastore.Key) error {
 		"DELETE FROM `%s` WHERE (%s) IN (%s)",
 		table, list, strings.Join(pks, ","))
 
-	fmt.Println("************* START DELETE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED DELETE QUERY ************")
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -552,9 +528,7 @@ func (x *SQLAdapter) SoftDelete(query *Query, key *datastore.Key) error {
 	where := fmt.Sprintf("WHERE `%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
 	sql := fmt.Sprintf("UPDATE `%s` SET %s %s", query.table.name, value, where)
-	fmt.Println("************* START SOFT DELETE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED SOFT DELETE QUERY ************")
+	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}

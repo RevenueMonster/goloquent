@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	"github.com/fatih/color"
 )
 
 // SQLAdapter :
@@ -46,6 +47,14 @@ func (x *SQLAdapter) newPrimaryKey(table string, parentKey *datastore.Key) *data
 		key.Parent = parentKey
 	}
 	return key
+}
+
+func (x *SQLAdapter) sqlDebug(sql string) {
+	if isDebug {
+		fmt.Println("************* START QUERY STATEMENT ************")
+		fmt.Println(color.GreenString(sql))
+		fmt.Println("************* ENDED QUERY STATEMENT ************")
+	}
 }
 
 func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results []map[string][]byte) (reflect.Value, error) {

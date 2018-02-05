@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
 // Count :
@@ -26,9 +24,7 @@ func (x *SQLAdapter) Count(query *Query) (uint, error) {
 		sql += fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ","))
 	}
 
-	fmt.Println("************* START COUNT QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED COUNT QUERY ************")
+	go x.sqlDebug(sql)
 
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(sql)

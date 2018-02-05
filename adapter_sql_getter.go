@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/datastore"
-	"github.com/fatih/color"
 )
 
 // Find :
@@ -41,9 +40,7 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 	}
 	q += ";"
 
-	fmt.Println("************* START FIND QUERY ************")
-	fmt.Println(color.GreenString(q))
-	fmt.Println("************* ENDED FIND QUERY ************")
+	go x.sqlDebug(q)
 
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(q)
@@ -98,9 +95,7 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 	}
 	q += ";"
 
-	fmt.Println("************* START FIRST QUERY ************")
-	fmt.Println(color.GreenString(q))
-	fmt.Println("************* ENDED FIRST QUERY ************")
+	go x.sqlDebug(q)
 
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(q)
@@ -151,27 +146,25 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	q := fmt.Sprintf("SELECT * FROM `%s`", table)
+	sql := fmt.Sprintf("SELECT * FROM `%s`", table)
 	if len(stmt.Where) > 0 {
-		q += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
+		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
 	if len(stmt.Order) > 0 {
-		q += fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ","))
+		sql += fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ","))
 	}
 	if stmt.Limit > 0 {
-		q += fmt.Sprintf(" LIMIT %d", stmt.Limit)
+		sql += fmt.Sprintf(" LIMIT %d", stmt.Limit)
 	}
 	if len(stmt.Locked) > 0 {
-		q += " " + stmt.Locked
+		sql += " " + stmt.Locked
 	}
-	q += ";"
+	sql += ";"
 
-	fmt.Println("************* START GET QUERY ************")
-	fmt.Println(color.GreenString(q))
-	fmt.Println("************* ENDED GET QUERY ************")
+	go x.sqlDebug(sql)
 
 	results := make([]map[string][]byte, 0)
-	results, err = x.ExecQuery(q)
+	results, err = x.ExecQuery(sql)
 	if err != nil {
 		return err
 	}
@@ -259,9 +252,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		}
 		query.offset = uint(offset)
 
-		fmt.Println("************* START PAGINATE QUERY ************")
-		fmt.Println(color.GreenString(sql2))
-		fmt.Println("************* ENDED PAGINATE QUERY ************")
+		go x.sqlDebug(sql2)
 	}
 
 	sql = fmt.Sprintf("SELECT * FROM `%s`", table) + sql
@@ -285,9 +276,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		return err
 	}
 
-	fmt.Println("************* START PAGINATE QUERY ************")
-	fmt.Println(color.GreenString(sql))
-	fmt.Println("************* ENDED PAGINATE QUERY ************")
+	go x.sqlDebug(sql)
 
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(sql)

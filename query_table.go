@@ -54,6 +54,11 @@ func (t *Table) Ancestor(parentKey *datastore.Key) *Query {
 	return newQuery(t).Ancestor(parentKey)
 }
 
+// NewQuery :
+func (t *Table) NewQuery() *Query {
+	return newQuery(t)
+}
+
 // Where :
 func (t *Table) Where(field string, o string, value interface{}) *Query {
 	return newQuery(t).Where(field, o, value)

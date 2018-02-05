@@ -91,7 +91,6 @@ func getEntity(t reflect.Type) (*Entity, error) {
 			return nil, errors.New("invalid")
 		}
 	} else if r.Implements(propertyLoadInterface) {
-		fmt.Println("is implement key loader")
 		loadFunc = func(i interface{}) error {
 			props := make([]datastore.Property, 0)
 			f := i.(datastore.PropertyLoadSaver)
