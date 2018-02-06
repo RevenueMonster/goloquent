@@ -76,7 +76,6 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 		"INSERT INTO `%s` (%v) VALUES (%v);",
 		table, strings.Join(fields, ","), strings.Join(vals, ","))
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -173,7 +172,6 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 		"INSERT INTO `%s` (%s) VALUES %s;",
 		table, strings.Join(fields, ","), strings.Join(records, ","))
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -242,7 +240,6 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 		"INSERT INTO `%s` (%v) VALUES (%v) ON DUPLICATE KEY UPDATE %s;",
 		table, strings.Join(fields, ","), strings.Join(vals, ","), strings.Join(where, ","))
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -342,7 +339,6 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		"INSERT INTO `%s` (%s) VALUES %s ON DUPLICATE KEY UPDATE %s;",
 		table, strings.Join(fields, ","), strings.Join(records, ","), strings.Join(colNames, ","))
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -418,7 +414,6 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 		"UPDATE `%s` SET %s WHERE %s;",
 		table, strings.Join(vals, ","), cond)
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -475,7 +470,6 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 	}
 	sql += ";"
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -488,11 +482,12 @@ func (x *SQLAdapter) Delete(query *Query, key *datastore.Key) error {
 	where := fmt.Sprintf(
 		"WHERE `%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	sql := fmt.Sprintf("DELETE FROM `%s` %s", query.table.name, where)
-	go x.sqlDebug(sql)
+	sql := fmt.Sprintf("DELETE FROM `%s` %s;", query.table.name, where)
+
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -514,7 +509,6 @@ func (x *SQLAdapter) DeleteMulti(query *Query, keys []*datastore.Key) error {
 		"DELETE FROM `%s` WHERE (%s) IN (%s)",
 		table, list, strings.Join(pks, ","))
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -528,7 +522,7 @@ func (x *SQLAdapter) SoftDelete(query *Query, key *datastore.Key) error {
 	where := fmt.Sprintf("WHERE `%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
 	sql := fmt.Sprintf("UPDATE `%s` SET %s %s", query.table.name, value, where)
-	go x.sqlDebug(sql)
+
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -547,11 +541,12 @@ func (x *SQLAdapter) RunInTransaction(table *Table, callback func(*Connection) e
 			mode:   modeTransaction,
 			client: x.client,
 			txn:    txn,
+			dbName: x.dbName,
 		},
 	}
 	return func(c *Connection, txn *sql.Tx) error {
+		defer txn.Rollback()
 		if err := callback(c); err != nil {
-			txn.Rollback()
 			return err
 		}
 		return txn.Commit()

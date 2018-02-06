@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/fatih/color"
 )
 
 // Migrate : create table base on the struct schema
@@ -23,7 +21,6 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %q AND TABLE_NAME = %q;",
 		x.dbName, table)
 
-	go x.sqlDebug(sql)
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(sql)
 
@@ -60,10 +57,6 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 
 		sql = fmt.Sprintf("ALTER TABLE `%s` %s;", table, strings.Join(script, ","))
 
-		fmt.Println("************* START MIGRATION ALTER QUERY ************")
-		fmt.Println(color.GreenString(sql))
-		fmt.Println("************* ENDED MIGRATION ALTER QUERY ************")
-
 		if _, err := x.Exec(sql); err != nil {
 			return err
 		}
@@ -98,8 +91,6 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 		"CREATE TABLE `%s` (%s) CHARACTER SET `%s` COLLATE `%s`;",
 		table, strings.Join(script, ","), utf8CharSet.Encoding, utf8CharSet.Collation)
 
-	go x.sqlDebug(sql)
-
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -111,7 +102,6 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 func (x *SQLAdapter) Drop(query *Query) error {
 	sql := fmt.Sprintf("DROP TABLE `%s`", query.table.name)
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -123,7 +113,6 @@ func (x *SQLAdapter) Drop(query *Query) error {
 func (x *SQLAdapter) DropIfExists(query *Query) error {
 	sql := fmt.Sprintf("DROP TABLE IF EXISTS `%s`", query.table.name)
 
-	go x.sqlDebug(sql)
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
@@ -134,9 +123,12 @@ func (x *SQLAdapter) DropIfExists(query *Query) error {
 // UniqueIndex :
 func (x *SQLAdapter) UniqueIndex(query *Query, fields ...string) error {
 	table := query.table.name
-	sql := fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON `%s` (%s);", strings.Join(fields, "_"), table, strings.Join(fields, ","))
+	sql := fmt.Sprintf("ALTER TABLE `%s`.`%s` DROP INDEX `%s`;", x.dbName, table, strings.Join(fields, "_"))
+	if _, err := x.Exec(sql); err != nil {
+		return err
+	}
 
-	go x.sqlDebug(sql)
+	sql = fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON `%s`.`%s` (%s);", strings.Join(fields, "_"), x.dbName, table, strings.Join(fields, ","))
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}

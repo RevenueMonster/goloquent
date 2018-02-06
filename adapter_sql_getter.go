@@ -40,8 +40,6 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 	}
 	q += ";"
 
-	go x.sqlDebug(q)
-
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(q)
 	if err != nil {
@@ -94,8 +92,6 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 		q += " " + stmt.Locked
 	}
 	q += ";"
-
-	go x.sqlDebug(q)
 
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(q)
@@ -160,8 +156,6 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 		sql += " " + stmt.Locked
 	}
 	sql += ";"
-
-	go x.sqlDebug(sql)
 
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(sql)
@@ -251,8 +245,6 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 			offset--
 		}
 		query.offset = uint(offset)
-
-		go x.sqlDebug(sql2)
 	}
 
 	sql = fmt.Sprintf("SELECT * FROM `%s`", table) + sql
@@ -275,8 +267,6 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	if err != nil {
 		return err
 	}
-
-	go x.sqlDebug(sql)
 
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(sql)

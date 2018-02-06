@@ -164,3 +164,12 @@ func (t *Table) UniqueIndex(fields ...string) error {
 	}
 	return adapter.UniqueIndex(newQuery(t), fields...)
 }
+
+// Sum :
+func (t *Table) Sum(field string) (uint, error) {
+	adapter, err := t.getSQLAdapter()
+	if err != nil {
+		return 0, err
+	}
+	return adapter.Sum(field, newQuery(t))
+}

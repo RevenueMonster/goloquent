@@ -209,6 +209,15 @@ func (q *Query) Count() (uint, error) {
 	return newBuilder(q).Count()
 }
 
+// Sum :
+func (q *Query) Sum(field string) (uint, error) {
+	adapter, err := q.table.getSQLAdapter()
+	if err != nil {
+		return 0, err
+	}
+	return adapter.Sum(field, q)
+}
+
 // WithTrashed :
 func (q *Query) WithTrashed() *Query {
 	q.hasTrashed = true

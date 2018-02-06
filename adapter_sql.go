@@ -120,6 +120,8 @@ func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results
 
 // Exec :
 func (x *SQLAdapter) Exec(q string) (sql.Result, error) {
+	go x.sqlDebug(q)
+
 	if x.mode == modeNormal {
 		return x.client.Exec(q)
 	}
@@ -130,6 +132,9 @@ func (x *SQLAdapter) Exec(q string) (sql.Result, error) {
 // ExecQuery :
 func (x *SQLAdapter) ExecQuery(q string, args ...interface{}) ([]map[string][]byte, error) {
 	r := make([]map[string][]byte, 0)
+
+	go x.sqlDebug(q)
+
 	var (
 		rows *sql.Rows
 		err  error
