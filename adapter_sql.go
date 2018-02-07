@@ -326,9 +326,16 @@ func (x *SQLAdapter) toColumnSQL(cols []*Field) []string {
 			settings = append(settings, "NOT NULL")
 
 			strDefault := ""
-			// if toStrFunc, isExist := dataTypeToStringFunc[each.Type.Kind()]; isExist {
-			// 	strDefault = toStrFunc(s.DefaultValue)
-			// }
+			if s.DefaultValue != nil {
+				switch vt := s.DefaultValue.(type) {
+				case time.Time:
+					strDefault = vt.Format("2006-02-01 15:04:05")
+					strDefault = fmt.Sprintf("%q", strDefault)
+
+				default:
+				}
+			}
+
 			if strDefault != "" {
 				settings = append(settings, fmt.Sprintf("DEFAULT %s", strDefault))
 			}

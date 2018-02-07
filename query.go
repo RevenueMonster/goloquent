@@ -229,6 +229,15 @@ func (q *Query) Update(values interface{}) error {
 	return newBuilder(q).UpdateMulti(values)
 }
 
+// Delete :
+func (q *Query) Delete() error {
+	adapter, err := q.table.getSQLAdapter()
+	if err != nil {
+		return err
+	}
+	return adapter.deleteWithQuery(q)
+}
+
 // Limit :
 func (q *Query) Limit(i int) *Limit {
 	q.limit = uint(i)

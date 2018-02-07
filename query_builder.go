@@ -70,7 +70,8 @@ func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
 
 			for _, item := range fields {
 				f := v.FieldByIndex(item.Index)
-				if !f.IsValid() || isZero(f.Interface()) {
+				//  || isZero(f.Interface())
+				if !f.IsValid() {
 					continue
 				}
 				filters = append(filters, newFilter(item.Name, "=", f.Interface(), operators["="]))

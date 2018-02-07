@@ -1,6 +1,7 @@
 package goloquent
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -130,6 +131,30 @@ func (x *SQLAdapter) UniqueIndex(query *Query, fields ...string) error {
 
 	sql = fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON `%s`.`%s` (%s);", strings.Join(fields, "_"), x.dbName, table, strings.Join(fields, ","))
 	if _, err := x.Exec(sql); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// deleteWithQuery :
+func (x *SQLAdapter) deleteWithQuery(query *Query) error {
+	table := query.table.name
+	stmt, err := x.CompileStatement(query)
+	if err != nil {
+		return err
+	}
+
+	sql := fmt.Sprintf("DELETE FROM `%s`.`%s` WHERE ", x.dbName, table)
+
+	if len(stmt.Where) <= 0 {
+		return errors.New("goloquent: delete statement without where statement is not allow")
+	}
+
+	sql += fmt.Sprintf("%s", strings.Join(stmt.Where, " AND "))
+
+	_, err = x.Exec(sql)
+	if err != nil {
 		return err
 	}
 
