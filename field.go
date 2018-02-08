@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"time"
 
@@ -237,6 +238,11 @@ func ListFields(t reflect.Type) (*Field, *Field, []*Field, error) {
 		// unshift scan struct
 		scanStructs = scanStructs[1:]
 	}
+
+	// Sort the column according to the sequence of model
+	sort.Slice(fields, func(i, j int) bool {
+		return fields[i].Index[0] < fields[j].Index[0]
+	})
 
 	return pk, soft, fields, nil
 }

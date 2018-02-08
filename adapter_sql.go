@@ -329,7 +329,7 @@ func (x *SQLAdapter) toColumnSQL(cols []*Field) []string {
 			if s.DefaultValue != nil {
 				switch vt := s.DefaultValue.(type) {
 				case time.Time:
-					strDefault = vt.Format("2006-02-01 15:04:05")
+					strDefault = vt.Format("2006-01-02 15:04:05")
 					strDefault = fmt.Sprintf("%q", strDefault)
 
 				default:

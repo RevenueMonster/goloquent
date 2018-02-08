@@ -30,9 +30,9 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	}
 
 	if len(results) > 0 {
-		columnList := make(map[string]bool, 0)
-		for _, item := range results {
-			columnList[strings.ToLower(string(item["COLUMN_NAME"]))] = true
+		columnList := make(map[string]int, 0)
+		for position, item := range results {
+			columnList[strings.ToLower(string(item["COLUMN_NAME"]))] = position
 		}
 
 		newCols := make([]*Field, 0)
@@ -40,6 +40,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 			entity.SoftDelete.Name = FieldNameSoftDelete
 			cols = append(cols, entity.SoftDelete)
 		}
+
 		for i, fs := range cols {
 			_, isExist := columnList[strings.ToLower(fs.Name)]
 			if !isExist {
@@ -47,10 +48,11 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 			}
 		}
 
-		script := x.toColumnSQL(newCols)
-		if len(script) <= 0 {
+		if len(newCols) <= 0 {
 			return nil
 		}
+
+		script := x.toColumnSQL(newCols)
 
 		for i, item := range script {
 			script[i] = fmt.Sprintf("ADD %s", item)
