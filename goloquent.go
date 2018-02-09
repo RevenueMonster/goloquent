@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/datastore"
-	"github.com/fatih/color"
 )
 
 // RawQuery :
@@ -47,18 +46,6 @@ func (c *Connection) Statement(query string, args ...interface{}) ([]map[string]
 	adapter, isOK := c.adapter.(*SQLAdapter)
 	if !isOK {
 		panic(errors.New("goloquent: unsupported feature"))
-	}
-	sql := query
-	for i := range args {
-		s, isOK := args[i].(string)
-		if isOK {
-			sql = strings.Replace(sql, "?", fmt.Sprintf("%q", s), 1)
-		}
-	}
-	if isDebug {
-		fmt.Println("************* START RAW QUERY ************")
-		fmt.Println(color.GreenString(sql))
-		fmt.Println("************* ENDED RAW QUERY ************")
 	}
 	return adapter.ExecQuery(query, args...)
 }

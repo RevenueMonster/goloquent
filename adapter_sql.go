@@ -133,7 +133,16 @@ func (x *SQLAdapter) Exec(q string) (sql.Result, error) {
 func (x *SQLAdapter) ExecQuery(q string, args ...interface{}) ([]map[string][]byte, error) {
 	r := make([]map[string][]byte, 0)
 
-	go x.sqlDebug(q)
+	go func(query string) {
+		sql := query
+		for i := range args {
+			s, isOK := args[i].(string)
+			if isOK {
+				sql = strings.Replace(sql, "?", fmt.Sprintf("%q", s), 1)
+			}
+		}
+		x.sqlDebug(sql)
+	}(q)
 
 	var (
 		rows *sql.Rows
