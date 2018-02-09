@@ -140,7 +140,14 @@ func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
 	}
 	t = t.Elem()
 	if t.Kind() == reflect.Struct {
-		return b.getAdapter().Upsert(b.query, modelStruct, parentKey.(*datastore.Key))
+		if parentKey == nil {
+			return b.getAdapter().Create(b.query, modelStruct, nil)
+		}
+		key, isValid := parentKey.(*datastore.Key)
+		if !isValid {
+			return errors.New("goloquent: invalid key datatype")
+		}
+		return b.getAdapter().Upsert(b.query, modelStruct, key)
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(modelStruct))
