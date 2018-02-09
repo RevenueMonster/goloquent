@@ -210,6 +210,17 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 		f.Set(reflect.ValueOf(primaryKey))
 	}
 
+	if entity.SoftDelete != nil {
+		fields = append(fields, fmt.Sprintf("`%s`", FieldNameSoftDelete))
+		f := v.Elem().FieldByIndex(entity.SoftDelete.Index)
+		sd := f.Interface().(SoftDelete)
+		strSoftDelete := "NULL"
+		if !isZero(sd.DeletedDateTime) {
+			strSoftDelete = fmt.Sprintf("%q", sd.DeletedDateTime.Format(MySQLDateTimeFormat))
+		}
+		vals = append(vals, strSoftDelete)
+	}
+
 	for _, fs := range cols {
 		f := v.Elem().FieldByIndex(fs.Index)
 		if !f.IsValid() {
@@ -330,6 +341,17 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 				fields = append(fields, fmt.Sprintf("`%s`", name))
 			}
 			vals = append(vals, fmt.Sprintf("%s", val))
+		}
+
+		if entity.SoftDelete != nil {
+			fields = append(fields, fmt.Sprintf("`%s`", FieldNameSoftDelete))
+			f := fv.Elem().FieldByIndex(entity.SoftDelete.Index)
+			sd := f.Interface().(SoftDelete)
+			strSoftDelete := "NULL"
+			if !isZero(sd.DeletedDateTime) {
+				strSoftDelete = fmt.Sprintf("%q", sd.DeletedDateTime.Format(MySQLDateTimeFormat))
+			}
+			vals = append(vals, strSoftDelete)
 		}
 
 		records = append(records, fmt.Sprintf("(%s)", strings.Join(vals, ",")))
