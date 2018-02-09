@@ -42,7 +42,7 @@ func (x *SQLAdapter) Count(query *Query) (uint, error) {
 }
 
 // Sum :
-func (x *SQLAdapter) Sum(field string, query *Query) (uint, error) {
+func (x *SQLAdapter) Sum(field string, query *Query) (int, error) {
 	table := query.table.name
 	stmt, err := x.CompileStatement(query)
 	if err != nil {
@@ -70,5 +70,5 @@ func (x *SQLAdapter) Sum(field string, query *Query) (uint, error) {
 		}
 	}
 
-	return uint(intSum), nil
+	return intSum, nil
 }

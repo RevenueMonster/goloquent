@@ -2,6 +2,7 @@ package goloquent
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -340,6 +341,22 @@ func (x *SQLAdapter) toColumnSQL(cols []*Field) []string {
 				case time.Time:
 					strDefault = vt.Format("2006-01-02 15:04:05")
 					strDefault = fmt.Sprintf("%q", strDefault)
+
+				case datastore.GeoPoint:
+					b, _ := json.Marshal(vt)
+					strDefault = fmt.Sprintf("%q", string(b))
+
+				case int, int8, int16, int32, int64:
+					strDefault = fmt.Sprintf("%d", vt)
+
+				case float32, float64:
+					strDefault = fmt.Sprintf("%d", vt)
+
+				case string:
+					strDefault = fmt.Sprintf("%q", vt)
+
+				case bool:
+					strDefault = fmt.Sprintf("%t", vt)
 
 				default:
 				}

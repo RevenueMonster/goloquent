@@ -180,7 +180,7 @@ func (t *Table) UniqueIndex(fields ...string) error {
 }
 
 // Sum :
-func (t *Table) Sum(field string) (uint, error) {
+func (t *Table) Sum(field string) (int, error) {
 	adapter, err := t.getSQLAdapter()
 	if err != nil {
 		return 0, err

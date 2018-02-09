@@ -210,7 +210,7 @@ func (q *Query) Count() (uint, error) {
 }
 
 // Sum :
-func (q *Query) Sum(field string) (uint, error) {
+func (q *Query) Sum(field string) (int, error) {
 	adapter, err := q.table.getSQLAdapter()
 	if err != nil {
 		return 0, err

@@ -94,16 +94,16 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 		schema = &FieldSchema{"boolean", false, false, false, false, nil}
 
 	case typeOfInt, typeOfInt8, typeOfInt16, typeOfInt32:
-		schema = &FieldSchema{"int", 0, false, tag.IsUnsigned(), false, nil}
+		schema = &FieldSchema{"int", int(0), false, tag.IsUnsigned(), false, nil}
 
 	case typeOfInt64:
-		schema = &FieldSchema{"bigint", 0, false, tag.IsUnsigned(), false, nil}
+		schema = &FieldSchema{"bigint", int64(0), false, tag.IsUnsigned(), false, nil}
 
 	case typeOfFloat32:
-		schema = &FieldSchema{"double(8,2)", 0, false, tag.IsUnsigned(), false, nil}
+		schema = &FieldSchema{"double(8,2)", float32(0), false, tag.IsUnsigned(), false, nil}
 
 	case typeOfFloat64:
-		schema = &FieldSchema{"decimal(10,2)", 0, false, tag.IsUnsigned(), false, nil}
+		schema = &FieldSchema{"decimal(10,2)", float64(0), false, tag.IsUnsigned(), false, nil}
 
 	case typeOfByte:
 		schema = &FieldSchema{"mediumblob", nil, true, false, false, nil}
