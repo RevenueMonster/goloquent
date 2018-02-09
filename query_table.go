@@ -156,6 +156,20 @@ func (t *Table) DropIfExists() error {
 	return adapter.DropIfExists(newQuery(t))
 }
 
+// DropUniqueIndex : (SQL exclusive actions)
+func (t *Table) DropUniqueIndex(fields ...string) error {
+	adapter, err := t.getSQLAdapter()
+	if err != nil {
+		return err
+	}
+
+	if len(fields) == 1 && fields[0] == tagKey {
+		return adapter.DropUniqueIndex(newQuery(t), FieldNamePrimaryKey)
+	}
+
+	return adapter.DropUniqueIndex(newQuery(t), fields...)
+}
+
 // UniqueIndex : (SQL exclusive actions)
 func (t *Table) UniqueIndex(fields ...string) error {
 	adapter, err := t.getSQLAdapter()

@@ -123,6 +123,28 @@ func (x *SQLAdapter) DropIfExists(query *Query) error {
 	return nil
 }
 
+// DropUniqueIndex :
+func (x *SQLAdapter) DropUniqueIndex(query *Query, fields ...string) error {
+	table := query.table.name
+
+	sql := fmt.Sprintf(
+		"SELECT * FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = %q AND TABLE_NAME = %q AND INDEX_NAME = %q;",
+		x.dbName, table, strings.Join(fields, "_"))
+	results, err := x.ExecQuery(sql)
+	if err != nil {
+		return err
+	}
+
+	if len(results) > 0 {
+		sql = fmt.Sprintf("ALTER TABLE `%s`.`%s` DROP INDEX `%s`;", x.dbName, table, strings.Join(fields, "_"))
+		if _, err := x.Exec(sql); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // UniqueIndex :
 func (x *SQLAdapter) UniqueIndex(query *Query, fields ...string) error {
 	table := query.table.name
