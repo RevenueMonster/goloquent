@@ -1,5 +1,9 @@
-# Google Datastore ORM 
-Inspired by Laravel Eloquent [https://laravel.com/docs/5.5/eloquent](https://laravel.com/docs/5.5/eloquent)
+# MySQL Datastore ORM 
+Inspired by Laravel Eloquent and Google Cloud Datastore
+
+## Database Support
+- [x] MySQL
+- [ ] Datastore (Work in progress)
 
 ## Installation
 * __Clone the project to src folder__
