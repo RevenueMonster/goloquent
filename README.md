@@ -6,7 +6,6 @@ Inspired by Laravel Eloquent and Google Cloud Datastore
 - [ ] Datastore (Work in progress)
 
 ## Installation
-* __Clone the project to src folder__
 ```bash
   // dependency
   $ go get -u github.com/go-sql-driver/mysql
@@ -23,8 +22,8 @@ Inspired by Laravel Eloquent and Google Cloud Datastore
 ## Quick Start
 ### Connect to database
 ```go
-    // Connect to mysql 
-    db, err := goloquent.Open("mysql", "username@/projectid")
+    // Connect to mysql, please refer to https://github.com/go-sql-driver/mysql#dsn-data-source-name
+    db, err := goloquent.Open("mysql", "username:password@/dbname")
     if err != nil {
         panic("Connection error: ", err)
     }
@@ -112,13 +111,13 @@ func (x *User) Save() ([]datastore.Property, error) {
     // Update if key exists, else create the user record
     parentKey := datastore.NameKey("Parent", "value", nil)
     if err := db.Table("User").Upsert(merchant, parentKey); err != nil {
-        log.Println(err) // fail to create record
+        log.Println(err) // fail
     }
 
     // Upsert with self generate key
     key := datastore.NameKey("User", "uniqueID", nil)
     if err := db.Table("User").Upsert(user, key); err != nil {
-        log.Println(err) // fail to create record
+        log.Println(err) // fail
     }
 ```
 
@@ -135,7 +134,7 @@ func (x *User) Save() ([]datastore.Property, error) {
     if err := db.Table("User").
         Where("Status", "=", "ACTIVE").
         Find(primaryKey, user); err != goloquent.ErrNoSuchEntity {
-        // if record not found using primary key, error ErrNoSuchEntity will throw instead
+        // if no record found using primary key, error `ErrNoSuchEntity` will throw instead
         log.Println(err) // error while retrieving record
     }
 ```
@@ -150,7 +149,7 @@ func (x *User) Save() ([]datastore.Property, error) {
 
     if user.Key != nil { // if have record
         fmt.Println("Have record")
-    } else {
+    } else { // no record
         fmt.Println("Doesnt't have record")
     }
 
