@@ -479,3 +479,6 @@ type User struct {
 **$Key**, **$Parent**, **$PrimaryKey** and **DeletedAt** are reserved words, please avoid to use these words as your column name
 
 
+[MIT License](https://github.com/RevenueMonster/goloquent/blob/master/LICENSE)
+
+
