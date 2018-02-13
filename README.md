@@ -1,6 +1,8 @@
 # MySQL Datastore ORM 
 Inspired by Laravel Eloquent and Google Cloud Datastore
 
+This repo still under development. We accept any pull request. ^_^
+
 ## Database Support
 - [x] MySQL
 - [ ] Datastore (Work in progress)
@@ -90,7 +92,7 @@ func (x *User) Save() ([]datastore.Property, error) {
 
     // Create with parent key
     parentKey := datastore.NameKey("Parent", "value", nil)
-    if err := db.Table("User").Create(merchant, parentKey); err != nil {
+    if err := db.Table("User").Create(user, parentKey); err != nil {
         log.Println(err) // fail to create record
     }
 
@@ -110,7 +112,7 @@ func (x *User) Save() ([]datastore.Property, error) {
 
     // Update if key exists, else create the user record
     parentKey := datastore.NameKey("Parent", "value", nil)
-    if err := db.Table("User").Upsert(merchant, parentKey); err != nil {
+    if err := db.Table("User").Upsert(user, parentKey); err != nil {
         log.Println(err) // fail
     }
 
@@ -192,7 +194,7 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 
     // Example 3
-    users := new([]user)
+    users := new([]User)
     if err := db.Table("User").
         Ancestor(parentKey).
         Where("Name", "=", "myz").
@@ -277,7 +279,7 @@ func (x *User) Save() ([]datastore.Property, error) {
     // Delete user table record which account type not equal to "PREMIUM" or "MONTLY"
     if err := db.Table("User").
         Where("AccountType", "!=", []string{
-        "PREMIUM", "MONTLY",
+            "PREMIUM", "MONTLY",
         }).
         Delete(); err != nil {
         log.Println(err) // fail to delete record
@@ -330,12 +332,14 @@ func (x *User) Save() ([]datastore.Property, error) {
 * __Unique Index__
 ```go
     // Create unique Index
-    if err := db.Table("User").UniqueIndex("CountryCode", "PhoneNumber"); err != nil {
+    if err := db.Table("User").
+        UniqueIndex("CountryCode", "PhoneNumber"); err != nil {
         log.Println(err)
     }
 
     // Drop Unique Index
-    if err := db.Table("User").DropUniqueIndex("CountryCode", "PhoneNumber"); err != nil {
+    if err := db.Table("User").
+        DropUniqueIndex("CountryCode", "PhoneNumber"); err != nil {
         log.Println(err)
     }
 
@@ -445,10 +449,19 @@ func (x *User) Save() ([]datastore.Property, error) {
 
 * __Extra Schema Option__
 ```go
+type datetime struct {
+    CreatedDateTime time.Time // `CreatedDateTime`
+    UpdatedDateTime time.Time // `UpdatedDateTime`
+}
+
+// Fields may have a `goloquent:"name,options"` tag.
 type User struct {
-    Name  string `goloquent:",longtext"` // Using `TEXT` datatype instead of `VARCHAR(255)` by default
-    Age   int    `goloquent:",unsigned"` // Unsigned option only applicable for int data type
-    Email string `goloquent:",unique"`   // Make column `Email` as unique field
+    Key     *datastore.Key `goloquent:"__key__"` // Primary Key
+    Name    string `goloquent:",longtext"` // Using `TEXT` datatype instead of `VARCHAR(255)` by default
+    Age     int    `goloquent:",unsigned"` // Unsigned option only applicable for int data type
+    PhoneNumber string `goloquent:",nullable"`
+    Email   string `goloquent:",unique"`   // Make column `Email` as unique field
+    Extra   string `goloquent:"-"` // Skip this field to store in db
     DefaultAddress struct {
         AddressLine1 string // `DefaultAddress.AddressLine1`
         AddressLine2 string // `DefaultAddress.AddressLine2`
@@ -457,7 +470,25 @@ type User struct {
         State        string // `DefaultAddress.State`
         Country      string 
     } `goloquent:",flatten"` // Flatten the struct field
+    datetime // Embedded struct
 }
+```
+
+We follow google datastore standard, only supports data type as following :
+```go
+- string
+- int, int8, int16, int32 and int64 (signed integers)
+- bool
+- float32 and float64
+- []byte
+- any type whose underlying type is one of the above predeclared types
+- *datastore.Key
+- datastore.GeoPoint
+- goloquent.SoftDelete
+- time.Time (pointer time is not support)
+- structs whose fields are all valid value types
+- pointers to structs whose fields are all valid value types
+- slices of any of the above
 ```
 
 | Data Type               | Schema                    | Default Value       |
