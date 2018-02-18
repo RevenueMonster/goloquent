@@ -25,6 +25,8 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(sql)
 
+	fmt.Println(results)
+
 	if err != nil {
 		return err
 	}

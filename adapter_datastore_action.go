@@ -19,11 +19,23 @@ func (ds *DataStoreAdapter) Create(query *Query, modelStruct interface{}, parent
 
 // CreateMulti :
 func (ds *DataStoreAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKey interface{}) error {
+	keys := make([]*datastore.Key, 0)
+	primaryKeys, err := ds.client.PutMulti(ds.context, keys, modelStruct)
+	if err != nil {
+		return err
+	}
+	fmt.Println(primaryKeys)
 	return nil
 }
 
 // Upsert :
 func (ds *DataStoreAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *datastore.Key) error {
+	keys := make([]*datastore.Key, 0)
+	primaryKeys, err := ds.client.PutMulti(ds.context, keys, modelStruct)
+	if err != nil {
+		return err
+	}
+	fmt.Println(primaryKeys)
 	return nil
 }
 

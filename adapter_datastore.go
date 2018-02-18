@@ -24,6 +24,7 @@ func (ds *DataStoreAdapter) newPrimaryKey(table string, parentKey *datastore.Key
 }
 
 // CompileQuery :
-func (ds *DataStoreAdapter) CompileQuery(query *Query) (*Statement, error) {
-	return nil, nil
+func (ds *DataStoreAdapter) CompileQuery(query *Query) (*datastore.Query, error) {
+	q := datastore.NewQuery(query.table.name)
+	return q, nil
 }

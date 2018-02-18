@@ -70,7 +70,6 @@ func newMySQL(connStr string) (*Connection, error) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(connStr)
 	if e := client.Ping(); e != nil {
 		return nil, e
 	}

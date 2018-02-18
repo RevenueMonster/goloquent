@@ -8,7 +8,6 @@ import (
 
 // Find :
 func (ds *DataStoreAdapter) Find(q *Query, key *datastore.Key, modelStruct interface{}) error {
-	fmt.Println("datastore find")
 	return ds.client.Get(ds.context, key, modelStruct)
 }
 
@@ -19,8 +18,16 @@ func (ds *DataStoreAdapter) First(q *Query, modelStruct interface{}) error {
 }
 
 // Get :
-func (ds *DataStoreAdapter) Get(q *Query, modelStruct interface{}) error {
-	fmt.Println("datastore get")
+func (ds *DataStoreAdapter) Get(query *Query, modelStruct interface{}) error {
+	q, err := ds.CompileQuery(query)
+	if err != nil {
+		return err
+	}
+
+	if _, err := ds.client.GetAll(ds.context, q, modelStruct); err != nil {
+		return err
+	}
+
 	return nil
 }
 
