@@ -282,7 +282,6 @@ func structToString(it interface{}) (*string, error) {
 
 	switch t {
 	case typeOfSoftDelete:
-		fmt.Println("soft : ", it)
 		if it == nil {
 			str = nil
 			return str, nil

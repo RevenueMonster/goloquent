@@ -9,7 +9,7 @@ import (
 	"cloud.google.com/go/datastore"
 )
 
-var operators = map[string]*operatorMapper{
+var operatorMappingList = map[string]*operatorMapper{
 	"=":        &operatorMapper{dbHybrid, eqOperatorToString},
 	">":        &operatorMapper{dbHybrid, compareOperatorToString},
 	"<":        &operatorMapper{dbHybrid, compareOperatorToString},
@@ -114,18 +114,6 @@ func (q *Query) Ancestor(ancestorKey *datastore.Key) *Query {
 	return q
 }
 
-// // WhereLike :
-// func (q *Query) WhereLike(field string, value interface{}) *Query {
-// 	q.filters = append(q.filters, newFilter(field, "LIKE", value, operators["LIKE"]))
-// 	return q
-// }
-
-// // WhereNotLike :
-// func (q *Query) WhereNotLike(field string, value interface{}) *Query {
-// 	q.filters = append(q.filters, newFilter(field, "NOT LIKE", value, operators["NOT LIKE"]))
-// 	return q
-// }
-
 // LockForShared :
 func (q *Query) LockForShared() *Getter {
 	q.lockMode = lockForShare
@@ -139,7 +127,7 @@ func (q *Query) LockForUpdate() *Getter {
 }
 
 // Where :
-func (q *Query) Where(field interface{}, o string, value interface{}) *Query {
+func (q *Query) Where(field interface{}, operator string, value interface{}) *Query {
 	strField := ""
 	switch field.(type) {
 	case string:
@@ -155,29 +143,29 @@ func (q *Query) Where(field interface{}, o string, value interface{}) *Query {
 	}
 
 	strField = strings.TrimSpace(strField)
-	o = strings.TrimSpace(strings.ToUpper(o))
-	m, isOK := operators[o]
+	operator = strings.TrimSpace(strings.ToUpper(operator))
+	m, isOK := operatorMappingList[operator]
 	if !isOK {
-		panic(fmt.Errorf("goloquent: unsupported operator %v", o))
+		panic(fmt.Errorf("goloquent: unsupported operator %v", operator))
 	}
 	if m.Compatible != dbHybrid && m.Compatible != q.table.connection.db {
-		panic(fmt.Errorf("goloquent: unsupported operator %v", o))
+		panic(fmt.Errorf("goloquent: unsupported operator %v", operator))
 	}
 
 	if value != nil {
 		v := reflect.ValueOf(value)
-		if o != "IN" && v.Type() != typeOfByte &&
+		if operator != "IN" && v.Type() != typeOfByte &&
 			(v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
 			f := make([]*Filter, v.Len(), v.Len())
 			for i := 0; i < v.Len(); i++ {
-				f[i] = newFilter(strField, o, v.Index(i).Interface(), m)
+				f[i] = newFilter(strField, operator, v.Index(i).Interface(), m)
 			}
 			q.filters = append(q.filters, f...)
 			return q
 		}
 	}
 
-	q.filters = append(q.filters, newFilter(strField, o, value, m))
+	q.filters = append(q.filters, newFilter(strField, operator, value, m))
 
 	return q
 }

@@ -25,6 +25,10 @@ func (b *Builder) getAdapter() Adapter {
 
 // Find :
 func (b *Builder) Find(key *datastore.Key, modelStruct interface{}) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	typeOf := reflect.TypeOf(modelStruct)
 	if typeOf.Kind() != reflect.Ptr {
 		return ErrInvalidDataTypeModel
@@ -39,15 +43,24 @@ func (b *Builder) Find(key *datastore.Key, modelStruct interface{}) error {
 
 // Get :
 func (b *Builder) Get(modelStruct interface{}) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	typeOf := reflect.TypeOf(modelStruct)
 	if typeOf.Kind() != reflect.Ptr {
 		return ErrInvalidDataTypeModel
 	}
+
 	return b.getAdapter().Get(b.query, modelStruct)
 }
 
 // First :
 func (b *Builder) First(modelStruct interface{}) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	t := reflect.TypeOf(modelStruct)
 	if t.Kind() != reflect.Ptr {
 		return ErrInvalidDataTypeModel
@@ -58,6 +71,10 @@ func (b *Builder) First(modelStruct interface{}) error {
 
 // Paginate :
 func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+	// TODO: restructure filter to []*Filter
 	if p.Filter != nil {
 		filters := make([]*Filter, 0)
 		v := reflect.Indirect(reflect.ValueOf(p.Filter))
@@ -74,7 +91,10 @@ func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
 				if !f.IsValid() {
 					continue
 				}
-				filters = append(filters, newFilter(item.Name, "=", f.Interface(), operators["="]))
+
+				filters = append(
+					filters,
+					newFilter(item.Name, "=", f.Interface(), operatorMappingList["="]))
 			}
 
 		// TODO: support for map filter
@@ -100,11 +120,19 @@ func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
 
 // Count :
 func (b *Builder) Count() (uint, error) {
+	if len(b.query.errs) > 0 {
+		return 0, b.query.errs[0]
+	}
+
 	return b.getAdapter().Count(b.query)
 }
 
 // Create :
 func (b *Builder) Create(modelStruct interface{}, parentKey interface{}) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	t := reflect.TypeOf(modelStruct)
 	if t.Kind() != reflect.Ptr {
 		return ErrInvalidDataTypeModel
@@ -134,6 +162,10 @@ func (b *Builder) Create(modelStruct interface{}, parentKey interface{}) error {
 
 // Upsert :
 func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	t := reflect.TypeOf(modelStruct)
 	if t.Kind() != reflect.Ptr {
 		return ErrInvalidDataTypeModel
@@ -163,6 +195,10 @@ func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
 
 // Update :
 func (b *Builder) Update(modelStruct interface{}) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	t := reflect.TypeOf(modelStruct)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -176,6 +212,10 @@ func (b *Builder) Update(modelStruct interface{}) error {
 
 // UpdateMulti :
 func (b *Builder) UpdateMulti(modelStruct interface{}) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	v := reflect.Indirect(reflect.ValueOf(modelStruct))
 	if v.Len() > int(MaxRecord) {
 		return fmt.Errorf("goloquent: maximum update records, %d", MaxRecord)
@@ -186,6 +226,10 @@ func (b *Builder) UpdateMulti(modelStruct interface{}) error {
 
 // Delete :
 func (b *Builder) Delete(key *datastore.Key) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	if key == nil {
 		return errors.New("goloquent: datastore key cannot be nil")
 	}
@@ -197,6 +241,10 @@ func (b *Builder) Delete(key *datastore.Key) error {
 
 // SoftDelete :
 func (b *Builder) SoftDelete(key *datastore.Key) error {
+	if len(b.query.errs) > 0 {
+		return b.query.errs[0]
+	}
+
 	if key == nil {
 		return errors.New("goloquent: datastore key cannot be nil")
 	}

@@ -15,7 +15,7 @@ const (
 	FieldNamePrimaryKey = "$PrimaryKey"
 	FieldNameSoftDelete = "DeletedAt"
 	DefaultTotalRecord  = uint(100)
-	IDLength            = 20
+	IDLength            = 50
 	KeyLength           = 767
 	TextLength          = 255
 	MaxKeyLength        = 1500

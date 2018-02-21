@@ -461,26 +461,29 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 	if v.Kind() == reflect.Map {
 		for _, key := range v.MapKeys() {
 			f := v.MapIndex(key)
-			t := reflect.TypeOf(f.Interface())
-			if t.Kind() == reflect.Ptr {
-				t = t.Elem()
-			}
 
-			parseFunc, isValid := interfaceToStringList[t]
-			if !isValid {
-				return ErrUnsupportDataType
-			}
+			strVal := "NULL"
+			if !f.IsNil() {
+				t := reflect.TypeOf(f.Interface())
+				if t.Kind() == reflect.Ptr {
+					t = t.Elem()
+				}
 
-			val := "NULL"
-			str, _ := parseFunc(f.Interface())
-			if str != nil {
-				val = fmt.Sprintf("%s", *str)
-				if !isNumber(t) {
-					val = fmt.Sprintf("%q", *str)
+				parseFunc, isValid := interfaceToStringList[t]
+				if !isValid {
+					return ErrUnsupportDataType
+				}
+
+				str, _ := parseFunc(f.Interface())
+				if str != nil {
+					strVal = fmt.Sprintf("%s", *str)
+					if !isNumber(t) {
+						strVal = fmt.Sprintf("%q", *str)
+					}
 				}
 			}
 
-			vals = append(vals, fmt.Sprintf("`%s` = %s", key, val))
+			vals = append(vals, fmt.Sprintf("`%s` = %s", key, strVal))
 		}
 	} else {
 		// TODO: struct

@@ -11,6 +11,7 @@ type FieldSchema struct {
 	DataType     string
 	DefaultValue interface{}
 	IsEscape     bool
+	IsUnique     bool
 	IsUnsigned   bool
 	IsNullable   bool
 	*CharSet

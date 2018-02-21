@@ -18,6 +18,17 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	}
 
 	cols := entity.GetFields()
+	columns := make([]*Field, 0)
+	columns = append(columns, &Field{FieldNameKey, FieldNameKey, true, false, nil, nil,
+		&FieldSchema{fmt.Sprintf("varchar(%d)", IDLength), nil, true, false, false, false, latin2CharSet}, nil})
+	columns = append(columns, &Field{FieldNameParent, FieldNameParent, true, false, nil, nil,
+		&FieldSchema{fmt.Sprintf("varchar(%d)", KeyLength), nil, true, false, false, false, latin2CharSet}, nil})
+	columns = append(columns, cols...)
+
+	if entity.SoftDelete != nil {
+		columns = append(columns, entity.SoftDelete)
+	}
+
 	sql := fmt.Sprintf(
 		"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = %q AND TABLE_NAME = %q;",
 		x.dbName, table)
@@ -31,34 +42,71 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 
 	if len(results) > 0 {
 		columnList := make(map[string]int, 0)
-		for position, item := range results {
-			columnList[strings.ToLower(string(item["COLUMN_NAME"]))] = position
+		for i, item := range results {
+			columnList[string(item["COLUMN_NAME"])] = i
 		}
 
-		newCols := make([]*Field, 0)
-		if entity.SoftDelete != nil {
-			entity.SoftDelete.Name = FieldNameSoftDelete
-			cols = append(cols, entity.SoftDelete)
-		}
+		syncColumns := make([]*Field, 0)
+		newColumns := make([]*Field, 0)
+		delColumns := make([]string, 0)
 
-		for i, fs := range cols {
-			_, isExist := columnList[strings.ToLower(fs.Name)]
-			if !isExist {
-				newCols = append(newCols, cols[i])
+		positionList := make(map[string]string, 0)
+		for i, fs := range columns {
+			_, isExist := columnList[fs.Name]
+			name := ""
+			if i > 0 {
+				name = (columns[i-1]).Name
 			}
+			positionList[fs.Name] = name
+			if isExist {
+				syncColumns = append(syncColumns, fs)
+				delete(columnList, fs.Name)
+				continue
+			}
+			newColumns = append(newColumns, columns[i])
 		}
 
-		if len(newCols) <= 0 {
-			return nil
+		// Get those deprecated columns
+		for k := range columnList {
+			delColumns = append(delColumns, k)
 		}
 
-		script := x.toColumnSQL(newCols)
-
-		for i, item := range script {
-			script[i] = fmt.Sprintf("ADD %s", item)
+		sql = fmt.Sprintf("ALTER TABLE `%s`", table)
+		stmt := make([]string, 0)
+		if len(newColumns) > 0 {
+			script := x.toSQLSchema(newColumns)
+			for i, item := range newColumns {
+				name := positionList[item.Name]
+				suffix := "FIRST"
+				if name != "" {
+					suffix = fmt.Sprintf("AFTER `%s`", name)
+				}
+				script[i] = fmt.Sprintf("ADD %s %s", script[i], suffix)
+			}
+			stmt = append(stmt, strings.Join(script, ","))
 		}
 
-		sql = fmt.Sprintf("ALTER TABLE `%s` %s;", table, strings.Join(script, ","))
+		if len(syncColumns) > 0 {
+			script := x.toSQLSchema(syncColumns)
+			for i, item := range syncColumns {
+				name := positionList[item.Name]
+				suffix := "FIRST"
+				if name != "" {
+					suffix = fmt.Sprintf("AFTER `%s`", name)
+				}
+				script[i] = fmt.Sprintf("MODIFY %s %s", script[i], suffix)
+			}
+			stmt = append(stmt, strings.Join(script, ","))
+		}
+
+		if len(delColumns) > 0 {
+			for i, item := range delColumns {
+				delColumns[i] = fmt.Sprintf("DROP `%s`", item)
+			}
+			stmt = append(stmt, strings.Join(delColumns, ","))
+		}
+		sql += " " + strings.Join(stmt, ",")
+		sql += ";"
 
 		if _, err := x.Exec(sql); err != nil {
 			return err
@@ -69,21 +117,8 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 
 	script := make([]string, 0)
 
-	// Set primary key field
-	script = append(script, fmt.Sprintf(
-		"`%s` varchar(%d) CHARACTER SET `%s` COLLATE `%s` NOT NULL",
-		FieldNameKey, IDLength, latin2CharSet.Encoding, latin2CharSet.Collation))
-	script = append(script, fmt.Sprintf(
-		"`%s` varchar(%d) CHARACTER SET `%s` COLLATE `%s` NOT NULL",
-		FieldNameParent, KeyLength, latin2CharSet.Encoding, latin2CharSet.Collation))
-
-	fieldScript := x.toColumnSQL(cols)
+	fieldScript := x.toSQLSchema(columns)
 	script = append(script, fieldScript...)
-
-	if entity.SoftDelete != nil {
-		s := entity.SoftDelete.Schema
-		script = append(script, fmt.Sprintf("`%s` %s", FieldNameSoftDelete, s.DataType))
-	}
 
 	// Index primary key field
 	script = append(script, fmt.Sprintf(

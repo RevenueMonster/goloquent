@@ -27,3 +27,8 @@ func (ds *DataStoreAdapter) newPrimaryKey(table string, parentKey *datastore.Key
 func (ds *DataStoreAdapter) CompileQuery(query *Query) (*Statement, error) {
 	return nil, nil
 }
+
+// Close :
+func (ds *DataStoreAdapter) Close() error {
+	return ds.client.Close()
+}

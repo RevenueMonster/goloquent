@@ -19,6 +19,7 @@ type Adapter interface {
 	CreateMulti(*Query, interface{}, interface{}) error     // Multiple record
 	UpsertMulti(*Query, interface{}, interface{}) error     // Multiple record
 	UpdateMulti(*Query, interface{}) error                  // Multiple record
+	Close() error
 	// FindMulti(*Query, []*datastore.Key, interface{}) error // Multiple record
 	// DeleteMulti([]*datastore.Key) error // Multiple record
 }

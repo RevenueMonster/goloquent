@@ -38,7 +38,7 @@ func (f *Field) Parse(i string) (interface{}, error) {
 // newField :
 func newField(s reflect.StructField, tag *Tag, name []string, index []int, schema *FieldSchema) *Field {
 	if schema == nil {
-		schema = &FieldSchema{"text", nil, true, false, true, utf8CharSet}
+		schema = &FieldSchema{"text", nil, true, false, false, true, utf8CharSet}
 	}
 
 	t := s.Type
@@ -85,44 +85,44 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 
 	switch t {
 	case typeOfString:
-		schema = &FieldSchema{fmt.Sprintf("varchar(%d)", TextLength), "", true, false, tag.IsNullable(), utf8CharSet}
+		schema = &FieldSchema{fmt.Sprintf("varchar(%d)", TextLength), "", true, tag.IsUnique(), false, tag.IsNullable(), utf8CharSet}
 		if tag.IsLongText() {
-			schema = &FieldSchema{"text", nil, true, false, tag.IsNullable(), utf8CharSet}
+			schema = &FieldSchema{"text", nil, true, tag.IsUnique(), false, tag.IsNullable(), utf8CharSet}
 		}
 
 	case typeOfBool:
-		schema = &FieldSchema{"boolean", false, false, false, false, nil}
+		schema = &FieldSchema{"boolean", false, false, false, false, false, nil}
 
 	case typeOfInt, typeOfInt8, typeOfInt16, typeOfInt32:
-		schema = &FieldSchema{"int", int(0), false, tag.IsUnsigned(), false, nil}
+		schema = &FieldSchema{"int", int(0), false, tag.IsUnique(), tag.IsUnsigned(), false, nil}
 
 	case typeOfInt64:
-		schema = &FieldSchema{"bigint", int64(0), false, tag.IsUnsigned(), false, nil}
+		schema = &FieldSchema{"bigint", int64(0), false, tag.IsUnique(), tag.IsUnsigned(), false, nil}
 
 	case typeOfFloat32:
-		schema = &FieldSchema{"double(8,2)", float32(0), false, tag.IsUnsigned(), false, nil}
+		schema = &FieldSchema{"double(8,2)", float32(0), false, tag.IsUnique(), tag.IsUnsigned(), false, nil}
 
 	case typeOfFloat64:
-		schema = &FieldSchema{"decimal(10,2)", float64(0), false, tag.IsUnsigned(), false, nil}
+		schema = &FieldSchema{"decimal(10,2)", float64(0), false, tag.IsUnique(), tag.IsUnsigned(), false, nil}
 
 	case typeOfByte:
-		schema = &FieldSchema{"mediumblob", nil, true, false, false, nil}
+		schema = &FieldSchema{"mediumblob", nil, true, tag.IsUnique(), false, false, nil}
 
 	case typeOfSoftDelete:
-		schema = &FieldSchema{"datetime", nil, true, false, true, nil}
+		schema = &FieldSchema{"datetime", nil, true, false, false, true, nil}
 
 	case typeOfTime:
-		schema = &FieldSchema{"datetime", time.Time{}, true, false, false, nil}
+		schema = &FieldSchema{"datetime", time.Time{}, true, false, false, false, nil}
 
 	case typeOfDataStoreKey:
-		schema = &FieldSchema{fmt.Sprintf("varchar(%d)", KeyLength), nil, true, false, true, latin2CharSet}
+		schema = &FieldSchema{fmt.Sprintf("varchar(%d)", KeyLength), nil, true, tag.IsUnique(), false, true, latin2CharSet}
 
 	case typeOfGeopoint:
-		schema = &FieldSchema{"varchar(50)", datastore.GeoPoint{}, true, false, false, latin2CharSet}
+		schema = &FieldSchema{"varchar(50)", datastore.GeoPoint{}, true, false, false, false, latin2CharSet}
 
 	default:
 		// slice, array or struct will be text
-		return &FieldSchema{"text", nil, true, false, false, utf8CharSet}, false
+		return &FieldSchema{"text", nil, true, tag.IsUnique(), false, false, utf8CharSet}, false
 
 	}
 
@@ -186,7 +186,7 @@ func ListFields(t reflect.Type) (*Field, *Field, []*Field, error) {
 
 			if t == typeOfSoftDelete {
 				schema, _ := getSchema(tag, t)
-				soft = newField(f, tag, col, index, schema)
+				soft = newField(f, tag, []string{FieldNameSoftDelete}, index, schema)
 				continue
 			}
 

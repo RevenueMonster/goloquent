@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 
 	"cloud.google.com/go/datastore"
@@ -27,8 +26,8 @@ func SetDebug(debug bool) {
 }
 
 // Close connection
-func (c *Connection) Close() {
-	fmt.Println("Connection close")
+func (c *Connection) Close() error {
+	return c.adapter.Close()
 }
 
 // Table :
@@ -70,7 +69,6 @@ func newMySQL(connStr string) (*Connection, error) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(connStr)
 	if e := client.Ping(); e != nil {
 		return nil, e
 	}

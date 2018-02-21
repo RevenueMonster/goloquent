@@ -9,11 +9,10 @@ import (
 // Create :
 func (ds *DataStoreAdapter) Create(query *Query, modelStruct interface{}, parentKey *datastore.Key) error {
 	key := ds.newPrimaryKey(query.table.name, parentKey)
-	k, err := ds.client.Put(ds.context, key, modelStruct)
+	_, err := ds.client.Put(ds.context, key, modelStruct)
 	if err != nil {
 		return err
 	}
-	fmt.Println(k)
 	return nil
 }
 

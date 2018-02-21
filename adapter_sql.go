@@ -304,40 +304,40 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 func (x *SQLAdapter) appendStatement(e *Entity, q *Query) *Query {
 	if e.SoftDelete != nil {
 		if !q.hasTrashed {
-			q.filters = append(q.filters, newFilter(FieldNameSoftDelete, "=", nil, operators["="]))
+			q.filters = append(q.filters,
+				newFilter(FieldNameSoftDelete, "=", nil, operatorMappingList["="]))
 		}
 	}
 	return q
 }
 
-// toColumnSQL :
-func (x *SQLAdapter) toColumnSQL(cols []*Field) []string {
-	script := make([]string, 0)
+// toSQLSchema :
+func (x *SQLAdapter) toSQLSchema(cols []*Field) []string {
+	scripts := make([]string, 0)
 
-	for _, each := range cols {
-		s := each.Schema
-		// tag := each.Tag
-		settings := make([]string, 0)
+	for _, item := range cols {
+		schema := item.Schema
+		props := make([]string, 0)
 
-		if s.IsUnsigned {
-			settings = append(settings, "UNSIGNED")
+		if schema.IsUnsigned {
+			props = append(props, "UNSIGNED")
 		}
 
 		// Set character set
-		if s.CharSet != nil {
-			settings = append(settings, fmt.Sprintf(
-				"CHARACTER SET `%s` COLLATE `%s`",
-				s.CharSet.Encoding,
-				s.CharSet.Collation))
+		if schema.CharSet != nil {
+			props = append(props,
+				fmt.Sprintf("CHARACTER SET `%s` COLLATE `%s`",
+					schema.CharSet.Encoding,
+					schema.CharSet.Collation))
 		}
 
 		// Set not null if not nullable
-		if !s.IsNullable {
-			settings = append(settings, "NOT NULL")
+		if !schema.IsNullable {
+			props = append(props, "NOT NULL")
 
 			strDefault := ""
-			if s.DefaultValue != nil {
-				switch vt := s.DefaultValue.(type) {
+			if schema.DefaultValue != nil {
+				switch vt := schema.DefaultValue.(type) {
 				case time.Time:
 					strDefault = vt.Format("2006-01-02 15:04:05")
 					strDefault = fmt.Sprintf("%q", strDefault)
@@ -363,14 +363,25 @@ func (x *SQLAdapter) toColumnSQL(cols []*Field) []string {
 			}
 
 			if strDefault != "" {
-				settings = append(settings, fmt.Sprintf("DEFAULT %s", strDefault))
+				props = append(props, fmt.Sprintf("DEFAULT %s", strDefault))
 			}
 		}
 
-		script = append(script, strings.TrimSpace(fmt.Sprintf(
-			"`%s` %s %s",
-			each.Name, s.DataType, strings.Join(settings, " "))))
+		if schema.IsUnique {
+			props = append(props, "UNIQUE")
+		}
+
+		sql := fmt.Sprintf("`%s` %s", item.Name, schema.DataType)
+		if len(props) > 0 {
+			sql += " " + strings.Join(props, " ")
+		}
+		scripts = append(scripts, sql)
 	}
 
-	return script
+	return scripts
+}
+
+// Close :
+func (x *SQLAdapter) Close() error {
+	return x.client.Close()
 }
