@@ -76,7 +76,7 @@ func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
 	}
 	// TODO: restructure filter to []*Filter
 	if p.Filter != nil {
-		filters := make([]*Filter, 0)
+		filters := make([]Filter, 0)
 		v := reflect.Indirect(reflect.ValueOf(p.Filter))
 		switch v.Kind() {
 		case reflect.Struct:

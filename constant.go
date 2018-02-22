@@ -10,36 +10,46 @@ import (
 
 // public constant variable
 const (
-	FieldNameKey        = "$Key"
-	FieldNameParent     = "$Parent"
-	FieldNamePrimaryKey = "$PrimaryKey"
-	FieldNameSoftDelete = "DeletedAt"
-	DefaultTotalRecord  = uint(100)
-	IDLength            = 50
-	KeyLength           = 767
-	TextLength          = 255
-	MaxKeyLength        = 1500
-	MaxRecord           = uint(500)
-	MaxSeed             = int64(9223372036854775807)
-	MinSeed             = int64(100000000000)
-	MySQLDateTimeFormat = "2006-01-02 15:04:05"
-	lockForUpdate       = "update"
-	lockForShare        = "share"
-	dbDataStore         = "datastore"
-	dbMySQL             = "mysql"
-	dbHybrid            = "hybrid"
-	modeNormal          = "normal"
-	modeTransaction     = "transaction"
-	optionTagDatastore  = "datastore" // option tag
-	optionTagGoloquent  = "goloquent"
-	tagKey              = "__key__"
-	tagOmitEmpty        = "omitempty"
-	tagNoIndex          = "noindex"
-	tagFlatten          = "flatten"
-	tagNullable         = "nullable"
-	tagUnsigned         = "unsigned" // extra
-	tagUnique           = "unique"   // extra
-	tagLongText         = "longtext" // extra
+	FieldNameKey               = "$Key"
+	FieldNameParent            = "$Parent"
+	FieldNamePrimaryKey        = "$PrimaryKey"
+	FieldNameSoftDelete        = "DeletedAt"
+	OperatorEqual              = "$eq"
+	OperatorNotEqual           = "$ne"
+	OperatorLike               = "$like"
+	OperatorNotLike            = "$nlike"
+	OperatorGreaterThan        = "$gt"
+	OperatorGreaterThanOrEqual = "$gte"
+	OperatorLessThan           = "$lt"
+	OperatorLessThanOrEqual    = "$lte"
+	OperatorIn                 = "$in"
+	OperatorNotIn              = "$nin"
+	DefaultTotalRecord         = uint(100)
+	IDLength                   = 50
+	KeyLength                  = 767
+	TextLength                 = 255
+	MaxKeyLength               = 1500
+	MaxRecord                  = uint(500)
+	MaxSeed                    = int64(9223372036854775807)
+	MinSeed                    = int64(100000000000)
+	MySQLDateTimeFormat        = "2006-01-02 15:04:05"
+	lockForUpdate              = "update"
+	lockForShare               = "share"
+	dbDataStore                = "datastore"
+	dbMySQL                    = "mysql"
+	dbHybrid                   = "hybrid"
+	modeNormal                 = "normal"
+	modeTransaction            = "transaction"
+	optionTagDatastore         = "datastore" // option tag
+	optionTagGoloquent         = "goloquent"
+	tagKey                     = "__key__"
+	tagOmitEmpty               = "omitempty"
+	tagNoIndex                 = "noindex"
+	tagFlatten                 = "flatten"
+	tagNullable                = "nullable"
+	tagUnsigned                = "unsigned" // extra
+	tagUnique                  = "unique"   // extra
+	tagLongText                = "longtext" // extra
 )
 
 // SoftDelete :
@@ -70,19 +80,18 @@ var (
 )
 
 var (
-	typeOfString          = reflect.TypeOf(string(""))
-	typeOfBool            = reflect.TypeOf(bool(false))
-	typeOfInt             = reflect.TypeOf(int(0))
-	typeOfInt8            = reflect.TypeOf(int8(0))
-	typeOfInt16           = reflect.TypeOf(int16(0))
-	typeOfInt32           = reflect.TypeOf(int32(0))
-	typeOfInt64           = reflect.TypeOf(int64(0))
-	typeOfFloat32         = reflect.TypeOf(float32(0))
-	typeOfFloat64         = reflect.TypeOf(float64(0))
-	typeOfByte            = reflect.TypeOf([]byte(nil))
-	typeOfTime            = reflect.TypeOf(time.Time{})
-	typeOfDataStoreKey    = reflect.TypeOf(datastore.Key{})
-	typeOfPtrDataStoreKey = reflect.TypeOf(&datastore.Key{})
-	typeOfGeopoint        = reflect.TypeOf(datastore.GeoPoint{})
-	typeOfSoftDelete      = reflect.TypeOf(SoftDelete{})
+	typeOfString       = reflect.TypeOf(string(""))
+	typeOfBool         = reflect.TypeOf(bool(false))
+	typeOfInt          = reflect.TypeOf(int(0))
+	typeOfInt8         = reflect.TypeOf(int8(0))
+	typeOfInt16        = reflect.TypeOf(int16(0))
+	typeOfInt32        = reflect.TypeOf(int32(0))
+	typeOfInt64        = reflect.TypeOf(int64(0))
+	typeOfFloat32      = reflect.TypeOf(float32(0))
+	typeOfFloat64      = reflect.TypeOf(float64(0))
+	typeOfByte         = reflect.TypeOf([]byte(nil))
+	typeOfTime         = reflect.TypeOf(time.Time{})
+	typeOfDataStoreKey = reflect.TypeOf(datastore.Key{})
+	typeOfGeopoint     = reflect.TypeOf(datastore.GeoPoint{})
+	typeOfSoftDelete   = reflect.TypeOf(SoftDelete{})
 )

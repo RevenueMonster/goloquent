@@ -71,8 +71,8 @@ func newField(s reflect.StructField, tag *Tag, name []string, index []int, schem
 
 // StructScan :
 type StructScan struct {
-	Column []string
 	Type   reflect.Type
+	Column []string
 	Index  []int
 }
 
