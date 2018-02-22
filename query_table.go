@@ -29,6 +29,17 @@ func (t *Table) getSQLAdapter() (*SQLAdapter, error) {
 	return adapter, nil
 }
 
+// Union :
+func (t *Table) Union(tables ...string) *Query {
+	q := newQuery(t)
+	_, err := t.getSQLAdapter()
+	if err != nil {
+		q.errs = append(q.errs, err)
+	}
+	q.tables = append(q.tables, tables...)
+	return q
+}
+
 // Find :
 func (t *Table) Find(key *datastore.Key, modelStruct interface{}) error {
 	return newBuilder(newQuery(t)).Find(key, modelStruct)
@@ -60,19 +71,9 @@ func (t *Table) NewQuery() *Query {
 }
 
 // Where :
-func (t *Table) Where(field string, o string, value interface{}) *Query {
-	return newQuery(t).Where(field, o, value)
+func (t *Table) Where(field string, operator string, value interface{}) *Query {
+	return newQuery(t).Where(field, operator, value)
 }
-
-// // WhereNotLike :
-// func (t *Table) WhereNotLike(field string, value interface{}) *Query {
-// 	return newQuery(t).WhereNotLike(field, value)
-// }
-
-// // WhereLike :
-// func (t *Table) WhereLike(field string, value interface{}) *Query {
-// 	return newQuery(t).WhereLike(field, value)
-// }
 
 // WithTrashed :
 func (t *Table) WithTrashed() *Query {

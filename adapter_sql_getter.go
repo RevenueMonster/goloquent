@@ -12,7 +12,6 @@ import (
 
 // Find :
 func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interface{}) error {
-	table := query.table.name
 	var entity *Entity
 	t := reflect.TypeOf(modelStruct)
 	entity, err := getEntity(t)
@@ -30,7 +29,7 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	q := fmt.Sprintf("SELECT * FROM `%s` WHERE %s", table, cond)
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", strings.Join(stmt.Table, " UNION"), cond)
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" AND %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -65,8 +64,6 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 
 // First :
 func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
-	table := query.table.name
-
 	t := reflect.TypeOf(modelStruct)
 	entity, err := getEntity(t)
 	if err != nil {
@@ -80,7 +77,7 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	q := fmt.Sprintf("SELECT * FROM `%s`", table)
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION "))
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -136,13 +133,12 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 	}
 
 	query = x.appendStatement(entity, query)
-	table := query.table.name
 	stmt, err = x.CompileStatement(query)
 	if err != nil {
 		return err
 	}
 
-	sql := fmt.Sprintf("SELECT * FROM `%s`", table)
+	sql := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION "))
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -181,8 +177,6 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 
 // Paginate :
 func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface{}) error {
-	table := query.table.name
-
 	var entity *Entity
 	t := reflect.TypeOf(modelStruct)
 	if t.Kind() == reflect.Ptr {
@@ -203,6 +197,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	}
 
 	sql := ""
+	selectStmt := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION "))
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -219,10 +214,10 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 
 		colKey := "RowNumber"
 		sql2 := fmt.Sprintf(
-			"%s JOIN (SELECT @ROW_NUM := 0) r",
+			"%s JOIN (SELECT @ROW_NUM := 0) AS Record",
 			fmt.Sprintf(
-				"SELECT @ROW_NUM := @ROW_NUM + 1 as RowNumber, `%s`, `%s` FROM `%s`",
-				FieldNameParent, FieldNameKey, table)) + sql
+				"SELECT @ROW_NUM := @ROW_NUM + 1 as RowNumber, `%s`, `%s` FROM (%s) AS Master",
+				FieldNameParent, FieldNameKey, strings.Join(stmt.Table, " UNION "))) + sql
 
 		sql2 = fmt.Sprintf(
 			"SELECT %s FROM (%s) AS Temp WHERE CONCAT(Temp.`%s`,%q,Temp.`%s`) = %q;",
@@ -247,7 +242,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		query.offset = uint(offset)
 	}
 
-	sql = fmt.Sprintf("SELECT * FROM `%s`", table) + sql
+	sql = selectStmt + sql
 
 	cap := p.Limit
 	if cap <= 0 {
