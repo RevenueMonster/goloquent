@@ -8,14 +8,13 @@ import (
 
 // Count :
 func (x *SQLAdapter) Count(query *Query) (uint, error) {
-	table := query.table.name
 	stmt, err := x.CompileStatement(query)
 	if err != nil {
 		return 0, err
 	}
 
-	key := fmt.Sprintf("COUNT(`%s`)", FieldNameKey)
-	sql := fmt.Sprintf("SELECT %s FROM `%s`", key, table)
+	key := "COUNT(*)"
+	sql := fmt.Sprintf("SELECT %s FROM (%s) AS `Master`", key, strings.Join(stmt.Table, " UNION "))
 
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))

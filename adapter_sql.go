@@ -25,6 +25,7 @@ type SQLAdapter struct {
 
 // Statement :
 type Statement struct {
+	Table  []string
 	Where  []string
 	Order  []string
 	Limit  uint
@@ -201,6 +202,14 @@ func (x *SQLAdapter) ExecQuery(q string, args ...interface{}) ([]map[string][]by
 
 // CompileStatement :
 func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
+	table := make([]string, 0)
+	if len(query.tables) > 0 {
+		for _, t := range query.tables {
+			table = append(table,
+				fmt.Sprintf("SELECT * FROM `%s`.`%s`", x.dbName, t))
+		}
+	}
+
 	where := make([]string, 0)
 	if len(query.filters) > 0 {
 		for _, f := range query.filters {
@@ -292,6 +301,7 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 	}
 
 	stmt := &Statement{
+		Table:  table,
 		Where:  where,
 		Order:  order,
 		Limit:  query.limit,

@@ -59,6 +59,7 @@ func newFilter(f string, o string, v interface{}, om *operatorMapper) *Filter {
 // Query :
 type Query struct {
 	table      *Table
+	tables     []string
 	ancestors  []*datastore.Key
 	filters    []*Filter
 	orders     []string
@@ -72,6 +73,7 @@ type Query struct {
 func newQuery(t *Table) *Query {
 	return &Query{
 		table:     t,
+		tables:    []string{t.name},
 		ancestors: make([]*datastore.Key, 0),
 		filters:   make([]*Filter, 0),
 		orders:    make([]string, 0),
