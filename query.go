@@ -29,17 +29,18 @@ type Filter struct {
 	stringFunc func(interface{}) (*string, error)
 }
 
-func (f *Filter) String() (*string, error) {
+func (f Filter) String() (*string, error) {
 	return f.stringFunc(f.Value)
 }
 
-func newFilter(f string, o string, v interface{}, om *operatorMapper) *Filter {
+func newFilter(f string, o string, v interface{}) Filter {
+	mapper := operatorMappingList[o]
 	if v == nil {
-		return &Filter{
+		return Filter{
 			Field:      f,
 			Operator:   o,
 			Value:      v,
-			stringFunc: om.StringFunc,
+			stringFunc: mapper.StringFunc,
 		}
 	}
 
@@ -48,11 +49,11 @@ func newFilter(f string, o string, v interface{}, om *operatorMapper) *Filter {
 		t = t.Elem()
 	}
 
-	return &Filter{
+	return Filter{
 		Field:      f,
 		Operator:   o,
 		Value:      v,
-		stringFunc: om.StringFunc,
+		stringFunc: mapper.StringFunc,
 	}
 }
 
@@ -61,7 +62,7 @@ type Query struct {
 	table      *Table
 	tables     []string
 	ancestors  []*datastore.Key
-	filters    []*Filter
+	filters    []Filter
 	orders     []string
 	lockMode   string
 	limit      uint
@@ -75,7 +76,7 @@ func newQuery(t *Table) *Query {
 		table:     t,
 		tables:    []string{t.name},
 		ancestors: make([]*datastore.Key, 0),
-		filters:   make([]*Filter, 0),
+		filters:   make([]Filter, 0),
 		orders:    make([]string, 0),
 		limit:     uint(0),
 		offset:    uint(0),
@@ -158,16 +159,16 @@ func (q *Query) Where(field interface{}, operator string, value interface{}) *Qu
 		v := reflect.ValueOf(value)
 		if operator != "IN" && v.Type() != typeOfByte &&
 			(v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
-			f := make([]*Filter, v.Len(), v.Len())
+			f := make([]Filter, v.Len(), v.Len())
 			for i := 0; i < v.Len(); i++ {
-				f[i] = newFilter(strField, operator, v.Index(i).Interface(), m)
+				f[i] = newFilter(strField, operator, v.Index(i).Interface())
 			}
 			q.filters = append(q.filters, f...)
 			return q
 		}
 	}
 
-	q.filters = append(q.filters, newFilter(strField, operator, value, m))
+	q.filters = append(q.filters, newFilter(strField, operator, value))
 
 	return q
 }

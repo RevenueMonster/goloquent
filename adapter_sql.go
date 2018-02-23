@@ -314,10 +314,11 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 func (x *SQLAdapter) appendStatement(e *Entity, q *Query) *Query {
 	if e.SoftDelete != nil {
 		if !q.hasTrashed {
-			q.filters = append(q.filters,
-				newFilter(FieldNameSoftDelete, "=", nil, operatorMappingList["="]))
+			f := newFilter(FieldNameSoftDelete, "=", nil)
+			q.filters = append(q.filters, f)
 		}
 	}
+
 	return q
 }
 
