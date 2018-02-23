@@ -74,8 +74,13 @@ func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
 	if len(b.query.errs) > 0 {
 		return b.query.errs[0]
 	}
-	// TODO: restructure filter to []*Filter
-	if p.Filter != nil {
+
+	switch val := p.Filter.(type) {
+	case nil:
+	case []Filter:
+		b.query.filters = append(b.query.filters, val...)
+
+	default:
 		filters := make([]Filter, 0)
 		v := reflect.Indirect(reflect.ValueOf(p.Filter))
 		switch v.Kind() {
@@ -92,9 +97,8 @@ func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
 					continue
 				}
 
-				filters = append(
-					filters,
-					newFilter(item.Name, "=", f.Interface(), operatorMappingList["="]))
+				filter := newFilter(item.Name, "=", f.Interface())
+				filters = append(filters, filter)
 			}
 
 		// TODO: support for map filter

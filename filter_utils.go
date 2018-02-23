@@ -1,7 +1,6 @@
 package goloquent
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 )
@@ -12,10 +11,10 @@ type FilterScan struct {
 	StructScan
 }
 
-func getFilter(it interface{}) (map[string]*Field, error) {
+func listFilter(it interface{}) (map[string]*FilterField, error) {
 	t := reflect.TypeOf(it)
 
-	fieldList := make(map[string]*Field, 0)
+	fieldList := make(map[string]*FilterField, 0)
 	scanStructs := make([]*FilterScan, 0)
 	scanStructs = append(scanStructs, &FilterScan{
 		JSONName: make([]string, 0),
@@ -65,8 +64,7 @@ func getFilter(it interface{}) (map[string]*Field, error) {
 			}
 
 			if mapFunc != nil {
-				fmt.Println(nameKey)
-				// fieldList[nameKey] = newField(tag, mapFunc)
+				fieldList[nameKey] = newFilterField(tag, mapFunc)
 				continue
 			}
 
@@ -96,9 +94,7 @@ func getFilter(it interface{}) (map[string]*Field, error) {
 					Index:  index,
 				},
 			})
-			continue
 		}
-
 		// unshift scan struct
 		scanStructs = scanStructs[1:]
 	}

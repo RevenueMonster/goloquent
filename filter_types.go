@@ -5,35 +5,25 @@ import (
 	"reflect"
 )
 
-type filterFunc func(*Field, interface{}) ([]Filter, error)
-
-var (
-	typeOfUint   = reflect.TypeOf(uint(0))
-	typeOfUint8  = reflect.TypeOf(uint8(0))
-	typeOfUint16 = reflect.TypeOf(uint16(0))
-	typeOfUint32 = reflect.TypeOf(uint32(0))
-	typeOfUint64 = reflect.TypeOf(uint64(0))
-)
+type filterFunc func(*FilterField, interface{}) ([]Filter, error)
 
 var typeFilterList = map[reflect.Type]filterFunc{
-// typeOfString:  stringFilter,
-// typeOfBool:    boolFilter,
-// typeOfInt:     intFilter,
-// typeOfInt8:    intFilter,
-// typeOfInt16:   intFilter,
-// typeOfInt32:   intFilter,
-// typeOfInt64:   intFilter,
-// typeOfUint:    intFilter,
-// typeOfUint8:   intFilter,
-// typeOfUint16:  intFilter,
-// typeOfUint32:  intFilter,
-// typeOfUint64:  intFilter,
-// typeOfFloat32: floatFilter,
-// typeOfFloat64: floatFilter,
-// typeOfTime:    timeFilter,
+	typeOfString:       stringFilter,
+	typeOfBool:         boolFilter,
+	typeOfInt:          intFilter,
+	typeOfInt8:         intFilter,
+	typeOfInt16:        intFilter,
+	typeOfInt32:        intFilter,
+	typeOfInt64:        int64Filter,
+	typeOfFloat32:      float32Filter,
+	typeOfFloat64:      float64Filter,
+	typeOfTime:         timeFilter,
+	typeOfDataStoreKey: keyFilter,
 }
 
 func isValidType(t reflect.Type) (filterFunc, error) {
+	var parseFunc filterFunc
+
 	switch t.Kind() {
 	case reflect.String:
 		goto routineValidType
@@ -44,9 +34,6 @@ func isValidType(t reflect.Type) (filterFunc, error) {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		goto routineValidType
 
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		goto routineValidType
-
 	case reflect.Float32, reflect.Float64:
 		goto routineValidType
 
@@ -54,14 +41,14 @@ func isValidType(t reflect.Type) (filterFunc, error) {
 		goto routineValidType
 
 	default:
-		return nil, fmt.Errorf("goloquent : invalid data type %T in filter struct", t)
+		return nil, fmt.Errorf("goloquent: invalid data type %q in filter layout", t.Kind())
 	}
 
 routineValidType:
-	mapFunc, isValid := typeFilterList[t]
-	if !isValid {
-		return mapFunc, nil
+	parseFunc, isExist := typeFilterList[t]
+	if !isExist {
+		return nil, nil
 	}
 
-	return mapFunc, nil
+	return parseFunc, nil
 }

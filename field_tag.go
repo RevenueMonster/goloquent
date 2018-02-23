@@ -59,7 +59,7 @@ func newTag(r reflect.StructField) *Tag {
 	tag := strings.TrimSpace(r.Tag.Get(optionTagDatastore))
 	goTag := strings.TrimSpace(r.Tag.Get(optionTagGoloquent))
 
-	// Indentify primary key with __key__
+	// Primary key tag : __key__
 	paths := strings.Split(tag, ",")
 	goPaths := strings.Split(goTag, ",")
 	if strings.TrimSpace(paths[0]) != "" {
