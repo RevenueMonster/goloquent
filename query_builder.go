@@ -221,8 +221,9 @@ func (b *Builder) UpdateMulti(modelStruct interface{}) error {
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(modelStruct))
-	if v.Len() > int(MaxRecord) {
-		return fmt.Errorf("goloquent: maximum update records, %d", MaxRecord)
+	if v.Kind() != reflect.Map && v.Kind() != reflect.Struct {
+		return fmt.Errorf(
+			"goloquent: invalid data type %T on update multiple records", modelStruct)
 	}
 
 	return b.getAdapter().UpdateMulti(b.query, modelStruct)
