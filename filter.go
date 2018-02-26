@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 )
 
 // FilterField :
@@ -42,7 +43,11 @@ func ParseFilter(layout interface{}, input []byte) ([]Filter, error) {
 	}
 
 	m := make(map[string]interface{}, 0)
-	if err := json.Unmarshal(input, &m); err != nil {
+	strJSON, err := strconv.Unquote(string(input))
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal([]byte(strJSON), &m); err != nil {
 		return nil, err
 	}
 
