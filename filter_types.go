@@ -40,6 +40,13 @@ func isValidType(t reflect.Type) (filterFunc, error) {
 	case reflect.Struct:
 		goto routineValidType
 
+	case reflect.Ptr:
+		t = t.Elem()
+		if t == typeOfDataStoreKey {
+			goto routineValidType
+		}
+		fallthrough
+
 	default:
 		return nil, fmt.Errorf("goloquent: invalid data type %q in filter layout", t.Kind())
 	}
