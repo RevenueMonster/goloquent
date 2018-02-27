@@ -41,14 +41,34 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	}
 
 	if len(results) > 0 {
+		sqlIndex := fmt.Sprintf(
+			"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = %q AND TABLE_NAME = %q;",
+			x.dbName, table)
+
+		indexResults := make([]map[string][]byte, 0)
+		indexResults, err = x.ExecQuery(sqlIndex)
+
+		if err != nil {
+			return err
+		}
+
+		delIndexes := make([]string, 0)
+		syncColumns := make([]*Field, 0)
+		newColumns := make([]*Field, 0)
+		delColumns := make([]string, 0)
+
+		for _, item := range indexResults {
+			idx := strings.TrimSpace(string(item["INDEX_NAME"]))
+			if idx == FieldNamePrimaryKey {
+				continue
+			}
+			delIndexes = append(delIndexes, idx)
+		}
+
 		columnList := make(map[string]int, 0)
 		for i, item := range results {
 			columnList[string(item["COLUMN_NAME"])] = i
 		}
-
-		syncColumns := make([]*Field, 0)
-		newColumns := make([]*Field, 0)
-		delColumns := make([]string, 0)
 
 		positionList := make(map[string]string, 0)
 		for i, fs := range columns {
@@ -73,6 +93,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 
 		sql = fmt.Sprintf("ALTER TABLE `%s`", table)
 		stmt := make([]string, 0)
+
 		if len(newColumns) > 0 {
 			script := x.toSQLSchema(newColumns)
 			for i, item := range newColumns {
@@ -84,6 +105,13 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 				script[i] = fmt.Sprintf("ADD %s %s", script[i], suffix)
 			}
 			stmt = append(stmt, strings.Join(script, ","))
+		}
+
+		if len(delIndexes) > 0 {
+			for i, item := range delIndexes {
+				delIndexes[i] = fmt.Sprintf("DROP INDEX `%s`", item)
+			}
+			stmt = append(stmt, strings.Join(delIndexes, ","))
 		}
 
 		if len(syncColumns) > 0 {

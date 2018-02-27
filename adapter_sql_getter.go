@@ -29,7 +29,7 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", strings.Join(stmt.Table, " UNION"), cond)
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", strings.Join(stmt.Table, " UNION ALL"), cond)
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" AND %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -77,7 +77,7 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	q := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION "))
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION ALL "))
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -138,7 +138,7 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	sql := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION "))
+	sql := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION ALL "))
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -197,7 +197,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	}
 
 	sql := ""
-	selectStmt := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION "))
+	selectStmt := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION ALL "))
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -217,7 +217,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 			"%s JOIN (SELECT @ROW_NUM := 0) AS Record",
 			fmt.Sprintf(
 				"SELECT @ROW_NUM := @ROW_NUM + 1 as RowNumber, `%s`, `%s` FROM (%s) AS Master",
-				FieldNameParent, FieldNameKey, strings.Join(stmt.Table, " UNION "))) + sql
+				FieldNameParent, FieldNameKey, strings.Join(stmt.Table, " UNION ALL "))) + sql
 
 		sql2 = fmt.Sprintf(
 			"SELECT %s FROM (%s) AS Temp WHERE CONCAT(Temp.`%s`,%q,Temp.`%s`) = %q;",
@@ -247,8 +247,8 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	cap := p.Limit
 	if cap <= 0 {
 		cap = DefaultTotalRecord
-	} else if cap > MaxRecord {
-		cap = MaxRecord
+	} else if cap > MaxRecordGet {
+		cap = MaxRecordGet
 	}
 	cap++ // extra one record for pagination
 	sql += fmt.Sprintf(" LIMIT %d", cap)

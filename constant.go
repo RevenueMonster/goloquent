@@ -29,7 +29,8 @@ const (
 	KeyLength                  = 767
 	TextLength                 = 255
 	MaxKeyLength               = 1500
-	MaxRecord                  = uint(500)
+	MaxRecordInsert            = uint(500)
+	MaxRecordGet               = uint(1000)
 	MaxSeed                    = int64(9223372036854775807)
 	MinSeed                    = int64(100000000000)
 	MySQLDateTimeFormat        = "2006-01-02 15:04:05"

@@ -14,7 +14,7 @@ func (x *SQLAdapter) Count(query *Query) (uint, error) {
 	}
 
 	key := "COUNT(*)"
-	sql := fmt.Sprintf("SELECT %s FROM (%s) AS `Master`", key, strings.Join(stmt.Table, " UNION "))
+	sql := fmt.Sprintf("SELECT %s FROM (%s) AS `Master`", key, strings.Join(stmt.Table, " UNION ALL "))
 
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
