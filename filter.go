@@ -22,10 +22,10 @@ func (f *FilterField) Map(it interface{}) ([]Filter, error) {
 	return f.mapFunc(f, it)
 }
 
-func newFilterField(tag *FilterTag, mapFunc filterFunc) *FilterField {
+func newFilterField(name, jsonName string, mapFunc filterFunc) *FilterField {
 	return &FilterField{
-		Name:     tag.Name,
-		JSONName: tag.JSONName,
+		Name:     name,
+		JSONName: jsonName,
 		mapFunc:  mapFunc,
 	}
 }
@@ -42,12 +42,14 @@ func ParseFilter(layout interface{}, input []byte) ([]Filter, error) {
 		return nil, err
 	}
 
-	m := make(map[string]interface{}, 0)
-	strJSON, err := strconv.Unquote(string(input))
-	if err != nil {
-		return nil, err
+	jsonByte := input
+	str, err := strconv.Unquote(string(input))
+	if err == nil {
+		jsonByte = []byte(str)
 	}
-	if err := json.Unmarshal([]byte(strJSON), &m); err != nil {
+
+	m := make(map[string]interface{}, 0)
+	if err := json.Unmarshal(jsonByte, &m); err != nil {
 		return nil, err
 	}
 

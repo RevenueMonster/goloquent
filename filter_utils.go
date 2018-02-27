@@ -64,7 +64,8 @@ func listFilter(it interface{}) (map[string]*FilterField, error) {
 			}
 
 			if mapFunc != nil {
-				fieldList[nameKey] = newFilterField(tag, mapFunc)
+				fieldList[nameKey] = newFilterField(
+					strings.Join(name, "."), strings.Join(jsonName, "."), mapFunc)
 				continue
 			}
 
