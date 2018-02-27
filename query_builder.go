@@ -157,8 +157,8 @@ func (b *Builder) Create(modelStruct interface{}, parentKey interface{}) error {
 	if v.Len() <= 0 {
 		return errors.New("goloquent: no valid record to insert")
 	}
-	if v.Len() > int(MaxRecord) {
-		return fmt.Errorf("goloquent: maximum insert records, %d", MaxRecord)
+	if v.Len() > int(MaxRecordInsert) {
+		return fmt.Errorf("goloquent: maximum insert records, %d", MaxRecordInsert)
 	}
 
 	return b.getAdapter().CreateMulti(b.query, modelStruct, parentKey)
@@ -190,8 +190,8 @@ func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
 	if v.Len() <= 0 {
 		return errors.New("goloquent: no valid record to insert")
 	}
-	if v.Len() > int(MaxRecord) {
-		return fmt.Errorf("goloquent: maximum insert records, %d", MaxRecord)
+	if v.Len() > int(MaxRecordInsert) {
+		return fmt.Errorf("goloquent: maximum insert records, %d", MaxRecordInsert)
 	}
 
 	return b.getAdapter().UpsertMulti(b.query, modelStruct, parentKey)
