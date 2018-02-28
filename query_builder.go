@@ -119,6 +119,10 @@ func (b *Builder) Paginate(p *Pagination, modelStruct interface{}) error {
 		b.query.filters = append(b.query.filters, filters...)
 	}
 
+	if len(p.OrderBy) > 0 {
+		b.query.orders = append(b.query.orders, p.OrderBy...)
+	}
+
 	return b.getAdapter().Paginate(b.query, p, modelStruct)
 }
 
