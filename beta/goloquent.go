@@ -1,0 +1,115 @@
+package goloquent
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"strings"
+
+	"cloud.google.com/go/datastore"
+)
+
+// RawQuery :
+type RawQuery struct {
+	Name string
+}
+
+// Connection :
+type Connection struct {
+	db      string
+	adapter Adapter
+}
+
+// SetDebug :
+func SetDebug(debug bool) {
+	isDebug = debug
+}
+
+// Close connection
+func (c *Connection) Close() error {
+	return c.adapter.Close()
+}
+
+// Table :
+func (c *Connection) Table(name string) *Table {
+	return newTable(name, c)
+}
+
+// RunInTransaction :
+func (c *Connection) RunInTransaction(callback func(*Connection) error) error {
+	return newBuilder(newQuery(newTable("", c))).RunInTransaction(callback)
+}
+
+// Statement :
+func (c *Connection) Statement(query string, args ...interface{}) ([]map[string][]byte, error) {
+	adapter, isOK := c.adapter.(*SQLAdapter)
+	if !isOK {
+		panic(errors.New("goloquent: unsupported feature"))
+	}
+	return adapter.ExecQuery(query, args...)
+}
+
+func newDatastore(connStr string) (*Connection, error) {
+	ctx := context.Background()
+	client, err := datastore.NewClient(ctx, connStr)
+	if err != nil {
+		return nil, err
+	}
+	return &Connection{
+		db: dbDataStore,
+		adapter: &DataStoreAdapter{
+			client:  client,
+			context: ctx,
+		},
+	}, nil
+}
+
+func newMySQL(connStr string) (*Connection, error) {
+	client, err := sql.Open(dbMySQL, connStr)
+	if err != nil {
+		panic(err)
+	}
+	if e := client.Ping(); e != nil {
+		return nil, e
+	}
+	paths := strings.Split(connStr, "/")
+	return &Connection{
+		db: dbMySQL,
+		adapter: &SQLAdapter{
+			mode:   modeNormal,
+			client: client,
+			dbName: paths[len(paths)-1],
+		},
+	}, nil
+}
+
+var connPool = map[string]map[string]*Connection{}
+var dbTypes = map[string]func(string) (*Connection, error){
+	dbDataStore: newDatastore,
+	dbMySQL:     newMySQL,
+}
+
+// Raw : raw query
+func Raw(field string) *RawQuery {
+	return &RawQuery{Name: field}
+}
+
+// Open : open connection to database
+func Open(db string, connString string) (*Connection, error) {
+	db = strings.TrimSpace(strings.ToLower(db))
+	dbFunc, isValid := dbTypes[db]
+	if !isValid {
+		panic(ErrUnsupportDatabase)
+	}
+	pool := make(map[string]*Connection, 0)
+	if p, isExist := connPool[db]; isExist {
+		pool = p
+	}
+	conn, err := dbFunc(connString)
+	if err != nil {
+		return nil, err
+	}
+	pool[connString] = conn
+	connPool[db] = pool
+	return conn, nil
+}
