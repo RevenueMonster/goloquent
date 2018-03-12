@@ -265,6 +265,7 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
+
 	v := reflect.ValueOf(modelStruct).Elem()
 	entity, err := getEntity(t)
 	if err != nil {
@@ -314,9 +315,12 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 			return err
 		}
 
+		if fv.Kind() == reflect.Ptr {
+			fv = fv.Elem()
+		}
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
-			f := fv.Elem().FieldByIndex(fs.Index)
+			f := fv.FieldByIndex(fs.Index)
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
 			}
@@ -349,7 +353,7 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 				colNames = append(colNames, fmt.Sprintf("`%s`=VALUES(`%s`)", FieldNameSoftDelete, FieldNameSoftDelete))
 				fields = append(fields, fmt.Sprintf("`%s`", FieldNameSoftDelete))
 			}
-			f := fv.Elem().FieldByIndex(entity.SoftDelete.Index)
+			f := fv.FieldByIndex(entity.SoftDelete.Index)
 			sd := f.Interface().(SoftDelete)
 			strSoftDelete := "NULL"
 			if !isZero(sd.DeletedDateTime) {

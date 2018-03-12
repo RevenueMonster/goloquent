@@ -178,10 +178,11 @@ func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
 	if t.Kind() != reflect.Ptr {
 		return ErrInvalidDataTypeModel
 	}
+
 	t = t.Elem()
 	if t.Kind() == reflect.Struct {
 		if parentKey == nil {
-			return b.getAdapter().Create(b.query, modelStruct, nil)
+			return b.getAdapter().Upsert(b.query, modelStruct, nil)
 		}
 		key, isValid := parentKey.(*datastore.Key)
 		if !isValid {
