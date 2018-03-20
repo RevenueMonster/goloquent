@@ -34,17 +34,17 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 	vals = append(vals, fmt.Sprintf("%q", stringPrimaryKey(primaryKey)))
 	vals = append(vals, fmt.Sprintf("%q", primaryKey.Parent.String()))
 
-	// Call datastore.PropertyLoadSaver's Save func
-	// _, err = entity.SaveFunc(v.Interface())
-	// if err != nil {
-	// 	return err
-	// }
-
 	// Run through every property in struct and convert to string
 	v := reflect.ValueOf(modelStruct)
 	if entity.PrimaryKey != nil {
 		f := v.Elem().FieldByIndex(entity.PrimaryKey.Index)
 		f.Set(reflect.ValueOf(primaryKey))
+	}
+
+	// Call datastore.PropertyLoadSaver's Save func
+	_, err = entity.SaveFunc(v.Interface())
+	if err != nil {
+		return err
 	}
 
 	for _, fs := range cols {
