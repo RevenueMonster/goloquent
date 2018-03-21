@@ -49,6 +49,10 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 
 	for _, fs := range cols {
 		f := v.Elem().FieldByIndex(fs.Index)
+		if f.Kind() == reflect.Ptr && f.IsNil() {
+			continue
+		}
+
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
@@ -140,6 +144,9 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
 			f := fv.Elem().FieldByIndex(fs.Index)
+			if f.Kind() == reflect.Ptr && f.IsNil() {
+				continue
+			}
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
 			}
@@ -224,6 +231,9 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 
 	for _, fs := range cols {
 		f := v.Elem().FieldByIndex(fs.Index)
+		if f.Kind() == reflect.Ptr && f.IsNil() {
+			continue
+		}
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
@@ -321,6 +331,9 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
 			f := fv.FieldByIndex(fs.Index)
+			if f.Kind() == reflect.Ptr && f.IsNil() {
+				continue
+			}
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
 			}
@@ -389,16 +402,16 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 	cols := entity.GetFields()
 	vals := make([]string, 0)
 
-	// Call datastore.PropertyLoadSaver's Save func
-	// _, err = entity.SaveFunc(v.Interface())
-	// if err != nil {
-	// 	return err
-	// }
-
 	// Run through every property in struct and convert to string
 	v := reflect.ValueOf(modelStruct)
 	if entity.PrimaryKey == nil {
 		return ErrMissingPrimaryKey
+	}
+
+	// Call datastore.PropertyLoadSaver's Save func
+	_, err = entity.SaveFunc(modelStruct)
+	if err != nil {
+		return err
 	}
 
 	k := v.Elem().FieldByIndex(entity.PrimaryKey.Index)
@@ -413,9 +426,15 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
 
-		str, err := fs.String(f.Interface())
-		if err != nil {
-			return err
+		var str *string
+		var err error
+		if f.Kind() == reflect.Ptr && f.IsNil() {
+			str = nil
+		} else {
+			str, err = fs.String(f.Interface())
+			if err != nil {
+				return err
+			}
 		}
 
 		val := "NULL"

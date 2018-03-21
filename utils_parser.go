@@ -30,6 +30,43 @@ func stringKey(key *datastore.Key) string {
 	return strings.Join(paths, "/")
 }
 
+// ParseKey :
+func ParseKey(key string) (*datastore.Key, error) {
+	strKey := strings.TrimSpace(key)
+	if key == "" {
+		return nil, ErrInvalidPrimaryKey
+	}
+
+	strKey = strings.Trim(strKey, "/")
+	parents := strings.Split(strKey, "/")
+	if len(parents) <= 0 {
+		return nil, ErrInvalidPrimaryKey
+	}
+
+	parentKey := new(datastore.Key)
+	for _, each := range parents {
+		paths := strings.Split(each, ",")
+		if len(paths) != 2 {
+			return nil, ErrInvalidPrimaryKey
+		}
+		kind := paths[0]
+		strID := paths[1]
+		key := datastore.IncompleteKey(kind, nil)
+		i, err := strconv.ParseInt(strID, 10, 64)
+		if err != nil {
+			key.Name = strID
+		} else {
+			key.ID = i
+		}
+		if !parentKey.Incomplete() {
+			key.Parent = parentKey
+		}
+		parentKey = key
+	}
+
+	return parentKey, nil
+}
+
 func parsePrimaryKey(table string, id string, parent string) (*datastore.Key, error) {
 	keyHandler := func(pk *datastore.Key) (*datastore.Key, error) {
 		intID, err := strconv.ParseInt(id, 10, 64)

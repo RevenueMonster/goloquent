@@ -270,6 +270,9 @@ func sliceToString(it interface{}) (*string, error) {
 }
 
 func structToString(it interface{}) (*string, error) {
+	if it == nil {
+		return nil, nil
+	}
 	t := reflect.TypeOf(it)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
