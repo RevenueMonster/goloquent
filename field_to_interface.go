@@ -3,7 +3,6 @@ package goloquent
 import (
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -20,7 +19,6 @@ type GeoPoint struct {
 
 func mapToStruct(m map[string]interface{}) (interface{}, error) {
 	// TODO: restore struct using datastore definition
-	fmt.Println(m)
 	return nil, nil
 }
 

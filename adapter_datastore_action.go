@@ -22,12 +22,12 @@ func (ds *DataStoreAdapter) CreateMulti(query *Query, modelStruct interface{}, p
 }
 
 // Upsert :
-func (ds *DataStoreAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *datastore.Key) error {
+func (ds *DataStoreAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *datastore.Key, excluded ...string) error {
 	return nil
 }
 
 // UpsertMulti :
-func (ds *DataStoreAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKey interface{}) error {
+func (ds *DataStoreAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKey interface{}, excluded ...string) error {
 	return nil
 }
 

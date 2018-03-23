@@ -361,7 +361,7 @@ func (x *SQLAdapter) toSQLSchema(cols []*Field) []string {
 					strDefault = fmt.Sprintf("%d", vt)
 
 				case float32, float64:
-					strDefault = fmt.Sprintf("%d", vt)
+					strDefault = fmt.Sprintf("%.2f", vt)
 
 				case string:
 					strDefault = fmt.Sprintf("%q", vt)

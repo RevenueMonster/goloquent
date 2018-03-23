@@ -187,7 +187,7 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 }
 
 // Upsert :
-func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *datastore.Key) error {
+func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *datastore.Key, excluded ...string) error {
 	t := reflect.TypeOf(modelStruct).Elem()
 
 	entity, err := getEntity(t)
@@ -197,6 +197,16 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 
 	table := query.table.name
 	cols := entity.GetFields()
+
+	excludedFields := make(map[string]bool, 0)
+	for _, fieldName := range excluded {
+		if fieldName == FieldNameKey ||
+			fieldName == FieldNameParent ||
+			fieldName == "__key__" {
+			continue
+		}
+		excludedFields[fieldName] = true
+	}
 
 	// Generate primary key before insert to database
 	primaryKey := x.newPrimaryKey(table, parentKey)
@@ -231,9 +241,6 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 
 	for _, fs := range cols {
 		f := v.Elem().FieldByIndex(fs.Index)
-		if f.Kind() == reflect.Ptr && f.IsNil() {
-			continue
-		}
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
@@ -253,7 +260,10 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 			}
 		}
 
-		where = append(where, fmt.Sprintf("`%s`=VALUES(`%s`)", fs.Name, fs.Name))
+		if _, isOk := excludedFields[fs.Name]; !isOk {
+			where = append(where, fmt.Sprintf("`%s`=VALUES(`%s`)", fs.Name, fs.Name))
+		}
+
 		fields = append(fields, fmt.Sprintf("`%s`", fs.Name))
 		vals = append(vals, fmt.Sprintf("%s", val))
 	}
@@ -270,7 +280,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 }
 
 // UpsertMulti :
-func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKey interface{}) error {
+func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKey interface{}, excluded ...string) error {
 	t := reflect.TypeOf(modelStruct).Elem().Elem()
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
@@ -296,6 +306,16 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 			k = x.newPrimaryKey(table, parentKey.(*datastore.Key))
 		}
 		pKeys[i] = k
+	}
+
+	excludedFields := make(map[string]bool, 0)
+	for _, fieldName := range excluded {
+		if fieldName == FieldNameKey ||
+			fieldName == FieldNameParent ||
+			fieldName == "__key__" {
+			continue
+		}
+		excludedFields[fieldName] = true
 	}
 
 	fields := make([]string, 0)
@@ -331,9 +351,6 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
 			f := fv.FieldByIndex(fs.Index)
-			if f.Kind() == reflect.Ptr && f.IsNil() {
-				continue
-			}
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
 			}
@@ -355,7 +372,9 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 
 			if i == 0 {
 				name := fs.Name
-				colNames = append(colNames, fmt.Sprintf("`%s`=VALUES(`%s`)", name, name))
+				if _, isOk := excludedFields[fs.Name]; !isOk {
+					colNames = append(colNames, fmt.Sprintf("`%s`=VALUES(`%s`)", name, name))
+				}
 				fields = append(fields, fmt.Sprintf("`%s`", name))
 			}
 			vals = append(vals, fmt.Sprintf("%s", val))

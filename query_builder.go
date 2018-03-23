@@ -169,7 +169,7 @@ func (b *Builder) Create(modelStruct interface{}, parentKey interface{}) error {
 }
 
 // Upsert :
-func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
+func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}, excluded ...string) error {
 	if len(b.query.errs) > 0 {
 		return b.query.errs[0]
 	}
@@ -182,13 +182,13 @@ func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
 	t = t.Elem()
 	if t.Kind() == reflect.Struct {
 		if parentKey == nil {
-			return b.getAdapter().Upsert(b.query, modelStruct, nil)
+			return b.getAdapter().Upsert(b.query, modelStruct, nil, excluded...)
 		}
 		key, isValid := parentKey.(*datastore.Key)
 		if !isValid {
 			return errors.New("goloquent: invalid key datatype")
 		}
-		return b.getAdapter().Upsert(b.query, modelStruct, key)
+		return b.getAdapter().Upsert(b.query, modelStruct, key, excluded...)
 	}
 
 	v := reflect.Indirect(reflect.ValueOf(modelStruct))
@@ -199,7 +199,7 @@ func (b *Builder) Upsert(modelStruct interface{}, parentKey interface{}) error {
 		return fmt.Errorf("goloquent: maximum insert records, %d", MaxRecordInsert)
 	}
 
-	return b.getAdapter().UpsertMulti(b.query, modelStruct, parentKey)
+	return b.getAdapter().UpsertMulti(b.query, modelStruct, parentKey, excluded...)
 }
 
 // Update :

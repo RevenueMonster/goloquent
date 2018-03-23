@@ -101,8 +101,8 @@ func (t *Table) Create(modelStruct interface{}, parentKey interface{}) error {
 }
 
 // Upsert :
-func (t *Table) Upsert(modelStruct interface{}, parentKey interface{}) error {
-	return newBuilder(newQuery(t)).Upsert(modelStruct, parentKey)
+func (t *Table) Upsert(modelStruct interface{}, parentKey interface{}, excluded ...string) error {
+	return newBuilder(newQuery(t)).Upsert(modelStruct, parentKey, excluded...)
 }
 
 // Update :
