@@ -12,9 +12,13 @@ import (
 )
 
 func getField(v reflect.Value, path []int) reflect.Value {
+	fmt.Println(path)
 	var zero = reflect.ValueOf(nil)
 	for i := 0; i < len(path); i++ {
 		v = v.Field(path[i])
+		if v.IsValid() {
+			return v
+		}
 		if reflect.Ptr == v.Kind() && v.IsNil() {
 			return zero
 		}
@@ -59,7 +63,7 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 	}
 
 	for _, fs := range cols {
-		f := getField(v.Elem(), fs.Index)
+		f := v.Elem().FieldByIndex(fs.Index)
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
@@ -150,7 +154,7 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
-			f := getField(v.Elem(), fs.Index)
+			f := v.Elem().FieldByIndex(fs.Index)
 			if f.Kind() == reflect.Ptr && f.IsNil() {
 				continue
 			}
@@ -247,7 +251,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 	}
 
 	for _, fs := range cols {
-		f := getField(v.Elem(), fs.Index)
+		f := v.Elem().FieldByIndex(fs.Index)
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
@@ -355,9 +359,10 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		if fv.Kind() == reflect.Ptr {
 			fv = fv.Elem()
 		}
+
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
-			f := getField(v.Elem(), fs.Index)
+			f := fv.FieldByIndex(fs.Index)
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
 			}
