@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"sync"
 
 	"cloud.google.com/go/datastore"
 )
@@ -83,7 +84,7 @@ func newMySQL(connStr string) (*Connection, error) {
 	}, nil
 }
 
-var connPool = map[string]map[string]*Connection{}
+var connPool sync.Map
 var dbTypes = map[string]func(string) (*Connection, error){
 	dbDataStore: newDatastore,
 	dbMySQL:     newMySQL,
@@ -102,14 +103,14 @@ func Open(db string, connString string) (*Connection, error) {
 		panic(ErrUnsupportDatabase)
 	}
 	pool := make(map[string]*Connection, 0)
-	if p, isExist := connPool[db]; isExist {
-		pool = p
+	if p, isExist := connPool.Load(db); isExist {
+		pool = p.(map[string]*Connection)
 	}
 	conn, err := dbFunc(connString)
 	if err != nil {
 		return nil, err
 	}
 	pool[connString] = conn
-	connPool[db] = pool
+	connPool.Store(db, pool)
 	return conn, nil
 }
