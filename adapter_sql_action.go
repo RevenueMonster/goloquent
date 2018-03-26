@@ -14,8 +14,8 @@ import (
 func getField(v reflect.Value, path []int) reflect.Value {
 	var zero = reflect.ValueOf(nil)
 	for i := 0; i < len(path); i++ {
-		v = v.Field(i)
-		if v.IsNil() || !v.IsValid() {
+		v = v.Field(path[i])
+		if reflect.Ptr == v.Kind() && v.IsNil() {
 			return zero
 		}
 	}
