@@ -452,7 +452,7 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 	primaryKey := k.Interface().(*datastore.Key)
 
 	for _, fs := range cols {
-		f := getField(v.Elem(), fs.Index)
+		f := v.Elem().FieldByIndex(fs.Index)
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
