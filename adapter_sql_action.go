@@ -151,10 +151,14 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 		if err != nil {
 			return err
 		}
+		
+		if fv.Kind() == reflect.Ptr {
+			fv = fv.Elem()
+		}
 
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
-			f := v.Elem().FieldByIndex(fs.Index)
+			f := fv.FieldByIndex(fs.Index)
 			if f.Kind() == reflect.Ptr && f.IsNil() {
 				continue
 			}
