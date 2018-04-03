@@ -19,6 +19,10 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 		return err
 	}
 
+	if len(query.tables) < 1 {
+		query.tables = append(query.tables, entity.name)
+	}
+
 	query = x.appendStatement(entity, query)
 	var stmt *Statement
 	stmt, err = x.CompileStatement(query)
@@ -26,15 +30,10 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 		return err
 	}
 
-	table := entity.name
-	if len(stmt.Table) > 0 {
-		table = strings.Join(stmt.Table, " UNION ALL ")
-	}
-
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", table, cond)
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", strings.Join(stmt.Table, " UNION ALL "), cond)
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" AND %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -75,6 +74,10 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
+	if len(query.tables) < 1 {
+		query.tables = append(query.tables, entity.name)
+	}
+
 	query = x.appendStatement(entity, query)
 	var stmt *Statement
 	stmt, err = x.CompileStatement(query)
@@ -82,12 +85,8 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	table := entity.name
-	if len(stmt.Table) > 0 {
-		table = strings.Join(stmt.Table, " UNION ALL ")
-	}
-
-	q := fmt.Sprintf("SELECT * FROM (%s) AS Master", table)
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master",
+		strings.Join(stmt.Table, " UNION ALL "))
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -142,18 +141,18 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
+	if len(query.tables) < 1 {
+		query.tables = append(query.tables, entity.name)
+	}
+
 	query = x.appendStatement(entity, query)
 	stmt, err = x.CompileStatement(query)
 	if err != nil {
 		return err
 	}
 
-	table := entity.name
-	if len(stmt.Table) > 0 {
-		table = strings.Join(stmt.Table, " UNION ALL ")
-	}
-
-	sql := fmt.Sprintf("SELECT * FROM (%s) AS Master", table)
+	sql := fmt.Sprintf("SELECT * FROM (%s) AS Master",
+		strings.Join(stmt.Table, " UNION ALL "))
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -204,6 +203,10 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		return err
 	}
 
+	if len(query.tables) < 1 {
+		query.tables = append(query.tables, entity.name)
+	}
+
 	query = x.appendStatement(entity, query)
 	var stmt *Statement
 	stmt, err = x.CompileStatement(query)
@@ -211,13 +214,9 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		return err
 	}
 
-	table := entity.name
-	if len(stmt.Table) > 0 {
-		table = strings.Join(stmt.Table, " UNION ALL ")
-	}
-
 	sql := ""
-	selectStmt := fmt.Sprintf("SELECT * FROM (%s) AS Master", table)
+	selectStmt := fmt.Sprintf("SELECT * FROM (%s) AS Master",
+		strings.Join(stmt.Table, " UNION ALL "))
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}

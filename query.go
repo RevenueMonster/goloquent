@@ -72,9 +72,13 @@ type Query struct {
 }
 
 func newQuery(t *Table) *Query {
+	tables := make([]string, 0)
+	if t.name != "" {
+		tables = append(tables, t.name)
+	}
 	return &Query{
 		table:     t,
-		tables:    []string{t.name},
+		tables:    tables,
 		ancestors: make([]*datastore.Key, 0),
 		filters:   make([]Filter, 0),
 		orders:    make([]string, 0),
