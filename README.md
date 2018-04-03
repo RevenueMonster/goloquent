@@ -1,13 +1,16 @@
-# MySQL Datastore ORM 
+# MySQL Datastore ORM
+
 Inspired by Laravel Eloquent and Google Cloud Datastore
 
-This repo still under development. We accept any pull request. ^_^
+This repo still under development. We accept any pull request. ^\_^
 
 ## Database Support
-- [x] MySQL
-- [ ] Datastore (Work in progress)
+
+* [x] MySQL
+* [ ] Datastore (Pending)
 
 ## Installation
+
 ```bash
   // dependency
   $ go get -u github.com/go-sql-driver/mysql
@@ -16,13 +19,16 @@ This repo still under development. We accept any pull request. ^_^
   $ go get -u github.com/RevenueMonster/goloquent
 ```
 
-* __Import the library__
+* **Import the library**
+
 ```go
   import "github.com/revenuemonster/goloquent"
 ```
 
 ## Quick Start
+
 ### Connect to database
+
 ```go
     // Connect to mysql, please refer to https://github.com/go-sql-driver/mysql#dsn-data-source-name
     db, err := goloquent.Open("mysql", "username:password@/dbname")
@@ -30,9 +36,10 @@ This repo still under development. We accept any pull request. ^_^
         panic("Connection error: ", err)
     }
 ```
-#### User Table
-```go
 
+#### User Table
+
+```go
 // User : User kind parent is Merchant
 type User struct {
     Key             *datastore.Key `goloquent:"__key__"` // load table key
@@ -61,7 +68,8 @@ func (x *User) Save() ([]datastore.Property, error) {
 }
 ```
 
-### Helper 
+### Helper
+
 ```go
     goloquent.SetDebug(true) // Enable debug mode in goloquent
 
@@ -74,13 +82,14 @@ func (x *User) Save() ([]datastore.Property, error) {
 ```
 
 ### Create Record
+
 ```go
     // Example
     user := new(User)
     user.Name = "Hello World"
     user.Age = 18
 
-    // OR 
+    // OR
     var user *User
     user.Name = "Hello World"
     user.Age = 18
@@ -104,6 +113,7 @@ func (x *User) Save() ([]datastore.Property, error) {
 ```
 
 ### Upsert Record
+
 ```go
     // Example
     user := new(User)
@@ -124,7 +134,9 @@ func (x *User) Save() ([]datastore.Property, error) {
 ```
 
 ### Retrieve Record
-* __Get Single Record using Primary Key__
+
+* **Get Single Record using Primary Key**
+
 ```go
     // Example
     primaryKey := datastore.IDKey("User", int64(2305297334603281546), nil)
@@ -141,7 +153,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Get Single Record__
+* **Get Single Record**
+
 ```go
     // Example 1
     user := new(User)
@@ -175,7 +188,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Get Multiple Record__
+* **Get Multiple Record**
+
 ```go
     // Example 1
     users := new([]User)
@@ -203,7 +217,9 @@ func (x *User) Save() ([]datastore.Property, error) {
         log.Println(err) // error while retrieving record
     }
 ```
-* __Get Record with Ordering__
+
+* **Get Record with Ordering**
+
 ```go
     // Ascending order
     users := new([]*User)
@@ -221,13 +237,14 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Pagination Record__
+* **Pagination Record**
+
 ```go
     p := goloquent.Pagination{
         Limit:  10,
         Cursor: "", // pass the cursor that generate by the query so that it will display the next record
     }
-	
+
     // Example
     users := new([]*User)
     if err := db.Table("User").
@@ -252,7 +269,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Count Record__
+* **Count Record**
+
 ```go
     // Example
     n, err := db.Table("User").Count()
@@ -267,14 +285,18 @@ func (x *User) Save() ([]datastore.Property, error) {
 ```
 
 ### Delete Record
-* __Delete using Primary Key__
+
+* **Delete using Primary Key**
+
 ```go
     // Example
     if err := db.Table("User").Delete(user.Key); err != nil {
         log.Println(err) // fail to delete record
     }
 ```
-* __Delete using Where statement__
+
+* **Delete using Where statement**
+
 ```go
     // Delete user table record which account type not equal to "PREMIUM" or "MONTLY"
     if err := db.Table("User").
@@ -286,11 +308,12 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Soft Delete__
+* **Soft Delete**
+
 ```go
     type User struct {
         Key  *datastore.Key `datastore:"__key__"` // primary key
-        Name string 
+        Name string
         goloquent.SoftDelete // User struct will using SoftDelete when deleting  
     }
 
@@ -304,7 +327,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-### Transaction 
+### Transaction
+
 ```go
     // Example
     if err := db.RunInTransaction(func(txn *goloquent.Connection) error {
@@ -321,7 +345,9 @@ func (x *User) Save() ([]datastore.Property, error) {
 ```
 
 ### MySQL Exclusive
-* __Database Migration__
+
+* **Database Migration**
+
 ```go
     // Example
     user := new(User)
@@ -329,7 +355,9 @@ func (x *User) Save() ([]datastore.Property, error) {
         log.Println(err)
     }
 ```
-* __Unique Index__
+
+* **Unique Index**
+
 ```go
     // Create unique Index
     if err := db.Table("User").
@@ -349,7 +377,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Drop Database__
+* **Drop Database**
+
 ```go
     // This will throw error if table is not exist
     if err := db.Table("User").Drop(); err != nil {
@@ -362,7 +391,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Drop Database__
+* **Drop Database**
+
 ```go
     // This will throw error if table is not exist
     if err := db.Table("User").Drop(); err != nil {
@@ -375,7 +405,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Table Locking (only effective inside RunInTransaction)__
+* **Table Locking (only effective inside RunInTransaction)**
+
 ```go
     // Example
     userKey := datastore.IDKey("User", int64(4645436182170916864), nil)
@@ -398,7 +429,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Sum Column__
+* **Sum Column**
+
 ```go
     // Example
     n, err := db.Table("User").Sum("Age")
@@ -407,7 +439,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Filter Query__
+* **Filter Query**
+
 ```go
     // Update single record
     user := new(User)
@@ -425,7 +458,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Update Query__
+* **Update Query**
+
 ```go
     // Update single record
     user := new(User)
@@ -447,7 +481,8 @@ func (x *User) Save() ([]datastore.Property, error) {
     }
 ```
 
-* __Extra Schema Option__
+* **Extra Schema Option**
+
 ```go
 type datetime struct {
     CreatedDateTime time.Time // `CreatedDateTime`
@@ -468,13 +503,14 @@ type User struct {
         PostCode     int    // `DefaultAddress.PostCode`
         City         string // `DefaultAddress.City`
         State        string // `DefaultAddress.State`
-        Country      string 
+        Country      string
     } `goloquent:",flatten"` // Flatten the struct field
     datetime // Embedded struct
 }
 ```
 
 We follow google datastore standard, only supports data type as following :
+
 ```go
 - string
 - int, int8, int16, int32 and int64 (signed integers)
@@ -492,8 +528,8 @@ We follow google datastore standard, only supports data type as following :
 ```
 
 | Data Type               | Schema                    | Default Value       |
-| :---------------------- | :------------------------ | :-------------------|
-| *datastore.Key          | varchar(20), varchar(767) |                     |
+| :---------------------- | :------------------------ | :------------------ |
+| \*datastore.Key         | varchar(20), varchar(767) |                     |
 | datastore.GeoPoint      | varchar(50)               | {Lat: 0, Lng: 0}    |
 | string                  | varchar(255)              | ""                  |
 | []byte                  | mediumblob                |                     |
@@ -502,14 +538,10 @@ We follow google datastore standard, only supports data type as following :
 | float64                 | decimal(10,2)             | 0                   |
 | int, int8, int16, int32 | int                       | 0                   |
 | int64                   | big integer               | 0                   |
-| slice or array          | text                      | ""                  |                 
+| slice or array          | text                      | ""                  |
 | struct                  | text                      | ""                  |
 | time.Time               | datetime                  | 0001-01-01 00:00:00 |
 
-
 **$Key**, **$Parent**, **$PrimaryKey** and **DeletedAt** are reserved words, please avoid to use these words as your column name
 
-
 [MIT License](https://github.com/RevenueMonster/goloquent/blob/master/LICENSE)
-
-
