@@ -228,10 +228,13 @@ func (x *SQLAdapter) UniqueIndex(query *Query, fields ...string) error {
 		}
 	}
 
+	originalFields := make([]string, 0, len(fields))
+	copy(originalFields, fields)
+
 	for i := 0; i < len(fields); i++ {
 		fields[i] = fmt.Sprintf("`%s`", fields[i])
 	}
-	sql = fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON `%s`.`%s` (%s);", strings.Join(fields, "_"), x.dbName, table, strings.Join(fields, ","))
+	sql = fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON `%s`.`%s` (%s);", strings.Join(originalFields, "_"), x.dbName, table, strings.Join(fields, ","))
 	if _, err := x.Exec(sql); err != nil {
 		return err
 	}
