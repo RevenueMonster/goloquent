@@ -51,6 +51,10 @@ func (b *Builder) Get(modelStruct interface{}) error {
 	if typeOf.Kind() != reflect.Ptr {
 		return ErrInvalidDataTypeModel
 	}
+	typeOf = typeOf.Elem()
+	if typeOf.Kind() != reflect.Slice && typeOf.Kind() != reflect.Array {
+		return ErrInvalidDataTypeModel
+	}
 
 	return b.getAdapter().Get(b.query, modelStruct)
 }
@@ -61,9 +65,13 @@ func (b *Builder) First(modelStruct interface{}) error {
 		return b.query.errs[0]
 	}
 
-	t := reflect.TypeOf(modelStruct)
-	if t.Kind() != reflect.Ptr {
+	typeOf := reflect.TypeOf(modelStruct)
+	if typeOf.Kind() != reflect.Ptr {
 		return ErrInvalidDataTypeModel
+	}
+	e := typeOf.Elem()
+	if e.Kind() != reflect.Struct {
+		return errors.New("goloquent: model must be struct")
 	}
 
 	return b.getAdapter().First(b.query, modelStruct)

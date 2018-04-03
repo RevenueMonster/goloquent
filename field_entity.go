@@ -13,7 +13,7 @@ var entityList = map[string]*Entity{}
 
 // Entity :
 type Entity struct {
-	// columns     map[string]*Field
+	name        string
 	fields      []*Field
 	PrimaryKey  *Field
 	Type        reflect.Type
@@ -42,6 +42,7 @@ func getEntity(t reflect.Type) (*Entity, error) {
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
+	name := t.Name()
 	uniqueName := fmt.Sprintf("%s/%s", strings.TrimSpace(strings.Trim(t.PkgPath(), "/")), t.Name())
 	if cache, isExist := entityList[uniqueName]; isExist {
 		return cache, nil
@@ -106,6 +107,7 @@ func getEntity(t reflect.Type) (*Entity, error) {
 	}
 
 	e := &Entity{
+		name:        name,
 		fields:      f,
 		Type:        t,
 		PrimaryKey:  k,

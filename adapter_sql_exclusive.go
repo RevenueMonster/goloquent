@@ -11,11 +11,12 @@ import (
 func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	t := reflect.TypeOf(modelStruct)
 
-	table := query.table.name
 	entity, err := getEntity(t)
 	if err != nil {
 		return err
 	}
+
+	table := getTableName(entity, query)
 
 	cols := entity.GetFields()
 	columns := make([]*Field, 0)
@@ -227,6 +228,9 @@ func (x *SQLAdapter) UniqueIndex(query *Query, fields ...string) error {
 		}
 	}
 
+	for i := 0; i < len(fields); i++ {
+		fields[i] = fmt.Sprintf("`%s`", fields[i])
+	}
 	sql = fmt.Sprintf("CREATE UNIQUE INDEX `%s` ON `%s`.`%s` (%s);", strings.Join(fields, "_"), x.dbName, table, strings.Join(fields, ","))
 	if _, err := x.Exec(sql); err != nil {
 		return err

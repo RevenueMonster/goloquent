@@ -13,3 +13,8 @@ func newLimit(q *Query) *Limit {
 func (l *Limit) Get(modelStruct interface{}) error {
 	return newBuilder(l.query).Get(modelStruct)
 }
+
+// Update :
+func (l *Limit) Update(values map[string]interface{}) error {
+	return newBuilder(l.query).UpdateMulti(values)
+}

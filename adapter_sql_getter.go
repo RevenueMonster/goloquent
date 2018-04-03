@@ -26,10 +26,15 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 		return err
 	}
 
+	table := entity.name
+	if len(stmt.Table) > 0 {
+		table = strings.Join(stmt.Table, " UNION ALL ")
+	}
+
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", strings.Join(stmt.Table, " UNION ALL"), cond)
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", table, cond)
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" AND %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -77,7 +82,12 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	q := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION ALL "))
+	table := entity.name
+	if len(stmt.Table) > 0 {
+		table = strings.Join(stmt.Table, " UNION ALL ")
+	}
+
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master", table)
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -138,7 +148,12 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	sql := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION ALL "))
+	table := entity.name
+	if len(stmt.Table) > 0 {
+		table = strings.Join(stmt.Table, " UNION ALL ")
+	}
+
+	sql := fmt.Sprintf("SELECT * FROM (%s) AS Master", table)
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -196,8 +211,13 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		return err
 	}
 
+	table := entity.name
+	if len(stmt.Table) > 0 {
+		table = strings.Join(stmt.Table, " UNION ALL ")
+	}
+
 	sql := ""
-	selectStmt := fmt.Sprintf("SELECT * FROM (%s) AS Master", strings.Join(stmt.Table, " UNION ALL "))
+	selectStmt := fmt.Sprintf("SELECT * FROM (%s) AS Master", table)
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}

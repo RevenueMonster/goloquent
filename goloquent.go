@@ -36,6 +36,60 @@ func (c *Connection) Table(name string) *Table {
 	return newTable(name, c)
 }
 
+// Migrate :
+func (c *Connection) Migrate(src interface{}) error {
+	adapter, isOk := c.adapter.(*SQLAdapter)
+	if !isOk {
+		return errors.New("goloquent: not compactible")
+	}
+	return adapter.Migrate(newQuery(newTable("", c)), src)
+}
+
+// Find :
+func (c *Connection) Find(key *datastore.Key, src interface{}) error {
+	return newBuilder(newQuery(newTable("", c))).Find(key, src)
+}
+
+// First :
+func (c *Connection) First(src interface{}) error {
+	return newBuilder(newQuery(newTable("", c))).First(src)
+}
+
+// Get :
+func (c *Connection) Get(src interface{}) error {
+	return newBuilder(newQuery(newTable("", c))).Get(src)
+}
+
+// Paginate :
+func (c *Connection) Paginate(p *Pagination, src interface{}) error {
+	return newBuilder(newQuery(newTable("", c))).Paginate(p, src)
+}
+
+// Create :
+func (c *Connection) Create(src interface{}, key interface{}) error {
+	return newBuilder(newQuery(newTable("", c))).Create(src, key)
+}
+
+// Ancestor :
+func (c *Connection) Ancestor(ancestorKey *datastore.Key) *Query {
+	return newQuery(newTable("", c)).Ancestor(ancestorKey)
+}
+
+// Where :
+func (c *Connection) Where(field string, operator string, value interface{}) *Query {
+	return newQuery(newTable("", c)).Where(field, operator, value)
+}
+
+// Upsert :
+func (c *Connection) Upsert(src interface{}, key interface{}) error {
+	return newBuilder(newQuery(newTable("", c))).Upsert(src, key)
+}
+
+// Delete :
+func (c *Connection) Delete(key *datastore.Key) error {
+	return newBuilder(newQuery(newTable("", c))).Delete(key)
+}
+
 // RunInTransaction :
 func (c *Connection) RunInTransaction(callback func(*Connection) error) error {
 	return newBuilder(newQuery(newTable("", c))).RunInTransaction(callback)

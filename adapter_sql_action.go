@@ -11,16 +11,19 @@ import (
 	"cloud.google.com/go/datastore"
 )
 
+func getTableName(entity *Entity, query *Query) string {
+	if query.table.name != "" {
+		return query.table.name
+	}
+	return entity.name
+}
+
 func getField(v reflect.Value, path []int) reflect.Value {
-	fmt.Println(path)
-	var zero = reflect.ValueOf(nil)
-	for i := 0; i < len(path); i++ {
-		v = v.Field(path[i])
-		if v.IsValid() {
-			return v
-		}
-		if reflect.Ptr == v.Kind() && v.IsNil() {
-			return zero
+	for _, p := range path {
+		v = v.Field(p)
+		if v.Kind() == reflect.Ptr && v.IsNil() {
+			fmt.Println("Should be can : ", reflect.Zero(v.Type()).Interface())
+			return reflect.Zero(v.Type())
 		}
 	}
 	return v
@@ -35,7 +38,7 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 		return err
 	}
 
-	table := query.table.name
+	table := getTableName(entity, query)
 	cols := entity.GetFields()
 
 	// Generate primary key before insert to database
@@ -63,7 +66,7 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 	}
 
 	for _, fs := range cols {
-		f := v.Elem().FieldByIndex(fs.Index)
+		f := getField(v.Elem(), fs.Index)
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
@@ -110,7 +113,7 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 		return err
 	}
 
-	table := query.table.name
+	table := getTableName(entity, query)
 	cols := entity.GetFields()
 
 	pKeys := make([]*datastore.Key, v.Len())
@@ -151,17 +154,14 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 		if err != nil {
 			return err
 		}
-		
+
 		if fv.Kind() == reflect.Ptr {
 			fv = fv.Elem()
 		}
 
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
-			f := fv.FieldByIndex(fs.Index)
-			if f.Kind() == reflect.Ptr && f.IsNil() {
-				continue
-			}
+			f := getField(fv, fs.Index)
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
 			}
@@ -210,7 +210,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 		return err
 	}
 
-	table := query.table.name
+	table := getTableName(entity, query)
 	cols := entity.GetFields()
 
 	excludedFields := make(map[string]bool, 0)
@@ -255,7 +255,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 	}
 
 	for _, fs := range cols {
-		f := v.Elem().FieldByIndex(fs.Index)
+		f := getField(v.Elem(), fs.Index)
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
@@ -307,7 +307,7 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		return err
 	}
 
-	table := query.table.name
+	table := getTableName(entity, query)
 	cols := entity.GetFields()
 
 	pKeys := make([]*datastore.Key, v.Len())
@@ -366,7 +366,7 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 
 		// Run through every property in struct and convert to string
 		for _, fs := range cols {
-			f := fv.FieldByIndex(fs.Index)
+			f := getField(fv, fs.Index)
 			if !f.IsValid() {
 				return fmt.Errorf("goloquent: missing field %v", fs.Name)
 			}
@@ -433,7 +433,7 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	table := query.table.name
+	table := getTableName(entity, query)
 	cols := entity.GetFields()
 	vals := make([]string, 0)
 
@@ -456,7 +456,7 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 	primaryKey := k.Interface().(*datastore.Key)
 
 	for _, fs := range cols {
-		f := v.Elem().FieldByIndex(fs.Index)
+		f := getField(v.Elem(), fs.Index)
 		if !f.IsValid() {
 			return fmt.Errorf("goloquent: missing field on index %v", fs.Index)
 		}
@@ -545,6 +545,7 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 		}
 	} else {
 		// TODO: struct
+		return fmt.Errorf("goloquent: unsupported data type %v", v)
 	}
 
 	if len(vals) <= 0 {
@@ -554,6 +555,9 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 	sql := fmt.Sprintf("UPDATE `%s` SET %s", table, strings.Join(vals, ","))
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
+	}
+	if stmt.Limit > 0 {
+		sql += fmt.Sprintf(" LIMIT %d", stmt.Limit)
 	}
 	sql += ";"
 
@@ -566,10 +570,14 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 
 // Delete :
 func (x *SQLAdapter) Delete(query *Query, key *datastore.Key) error {
+	table := key.Kind
+	if query.table.name != "" {
+		table = query.table.name
+	}
 	where := fmt.Sprintf(
 		"WHERE `%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	sql := fmt.Sprintf("DELETE FROM `%s` %s;", query.table.name, where)
+	sql := fmt.Sprintf("DELETE FROM `%s` %s;", table, where)
 
 	if _, err := x.Exec(sql); err != nil {
 		return err
