@@ -221,15 +221,15 @@ func (x *SQLAdapter) UniqueIndex(query *Query, fields ...string) error {
 		return err
 	}
 
+	originalFields := make([]string, 0, len(fields))
+	originalFields = append(originalFields, fields...)
+
 	if len(results) > 0 {
-		sql = fmt.Sprintf("ALTER TABLE `%s`.`%s` DROP INDEX `%s`;", x.dbName, table, strings.Join(fields, "_"))
+		sql = fmt.Sprintf("ALTER TABLE `%s`.`%s` DROP INDEX `%s`;", x.dbName, table, strings.Join(originalFields, "_"))
 		if _, err := x.Exec(sql); err != nil {
 			return err
 		}
 	}
-
-	originalFields := make([]string, 0, len(fields))
-	copy(originalFields, fields)
 
 	for i := 0; i < len(fields); i++ {
 		fields[i] = fmt.Sprintf("`%s`", fields[i])
