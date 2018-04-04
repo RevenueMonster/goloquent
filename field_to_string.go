@@ -271,7 +271,7 @@ func sliceToString(it interface{}) (*string, error) {
 
 func structToString(it interface{}) (*string, error) {
 	v := reflect.ValueOf(it)
-	if it == nil || v.IsNil() {
+	if it == nil || (v.Kind() == reflect.Ptr && v.IsNil()) {
 		return nil, nil
 	}
 	t := reflect.TypeOf(it)
