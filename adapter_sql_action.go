@@ -22,7 +22,6 @@ func getField(v reflect.Value, path []int) reflect.Value {
 	for _, p := range path {
 		v = v.Field(p)
 		if v.Kind() == reflect.Ptr && v.IsNil() {
-			fmt.Println("Should be can : ", reflect.Zero(v.Type()).Interface())
 			return reflect.Zero(v.Type())
 		}
 	}
