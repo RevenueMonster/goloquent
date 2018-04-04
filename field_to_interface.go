@@ -17,9 +17,30 @@ type GeoPoint struct {
 	Lng json.Number
 }
 
-func mapToStruct(m map[string]interface{}) (interface{}, error) {
-	// TODO: restore struct using datastore definition
-	return nil, nil
+func mapToStruct(t reflect.Type, m map[string]interface{}) (interface{}, error) {
+	isPtr := false
+	if t.Kind() == reflect.Ptr {
+		if len(m) == 0 {
+			return nil, nil
+		}
+		isPtr = true
+		t = t.Elem()
+	}
+
+	vi := reflect.New(t)
+	for k, val := range m {
+		f := reflect.Indirect(vi).FieldByName(k)
+		if !f.IsValid() {
+			continue
+		}
+		f.Set(reflect.ValueOf(val))
+	}
+
+	if !isPtr {
+		vi = vi.Elem()
+	}
+
+	return vi.Interface(), nil
 }
 
 func stringToStr(f *Field, val string) (interface{}, error) {
@@ -147,7 +168,7 @@ func stringToStruct(f *Field, val string) (interface{}, error) {
 		if err := json.Unmarshal([]byte(val), &m); err != nil {
 			return nil, err
 		}
-		it, err = mapToStruct(m)
+		it, err = mapToStruct(f.Type, m)
 
 	}
 
