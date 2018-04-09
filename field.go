@@ -79,8 +79,10 @@ type StructScan struct {
 func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 	var schema *FieldSchema
 
+	var isPtr = false
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
+		isPtr = true
 	}
 
 	switch t {
@@ -118,7 +120,7 @@ func getSchema(tag *Tag, t reflect.Type) (*FieldSchema, bool) {
 		schema = &FieldSchema{fmt.Sprintf("varchar(%d)", KeyLength), nil, true, tag.IsUnique(), false, true, latin2CharSet}
 
 	case typeOfGeopoint:
-		schema = &FieldSchema{"varchar(50)", datastore.GeoPoint{}, true, false, false, false, latin2CharSet}
+		schema = &FieldSchema{"varchar(50)", datastore.GeoPoint{}, true, false, false, isPtr, latin2CharSet}
 
 	default:
 		// slice, array or struct will be text
