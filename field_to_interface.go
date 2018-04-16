@@ -3,6 +3,7 @@ package goloquent
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -33,7 +34,17 @@ func mapToStruct(t reflect.Type, m map[string]interface{}) (interface{}, error) 
 		if !f.IsValid() {
 			continue
 		}
-		f.Set(reflect.ValueOf(val))
+
+		switch f.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			n, isOk := val.(float64)
+			if isOk {
+				return nil, errors.New("goloquent: value is not a number")
+			}
+			f.SetInt(int64(n))
+		default:
+			f.Set(reflect.ValueOf(val))
+		}
 	}
 
 	if !isPtr {
