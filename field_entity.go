@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 
 	"cloud.google.com/go/datastore"
 )
 
-var entityList = map[string]*Entity{}
+var entityList sync.Map
 
 // Entity :
 type Entity struct {
@@ -44,8 +45,8 @@ func getEntity(t reflect.Type) (*Entity, error) {
 	}
 	name := t.Name()
 	uniqueName := fmt.Sprintf("%s/%s", strings.TrimSpace(strings.Trim(t.PkgPath(), "/")), t.Name())
-	if cache, isExist := entityList[uniqueName]; isExist {
-		return cache, nil
+	if cache, isExist := entityList.Load(uniqueName); isExist {
+		return cache.(*Entity), nil
 	}
 
 	k, s, f, err := ListFields(t)
@@ -118,7 +119,7 @@ func getEntity(t reflect.Type) (*Entity, error) {
 	}
 
 	// Cache entity to avoid repeating reflect on the same struct
-	entityList[uniqueName] = e
+	entityList.Store(uniqueName, e)
 
 	return e, nil
 }
