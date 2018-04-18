@@ -40,6 +40,10 @@ func stringFilter(field *FilterField, it interface{}) ([]Filter, error) {
 		f, err := queryFilter([]string{
 			OperatorEqual,
 			OperatorNotEqual,
+			OperatorGreaterThan,
+			OperatorGreaterThanOrEqual,
+			OperatorLessThan,
+			OperatorLessThanOrEqual,
 			OperatorLike,
 			OperatorNotLike,
 			OperatorIn,
