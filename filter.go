@@ -33,6 +33,9 @@ func newFilterField(name, jsonName string, mapFunc filterFunc) *FilterField {
 // ParseFilter :
 func ParseFilter(layout interface{}, input []byte) ([]Filter, error) {
 
+	if len(input) <= 0 {
+		return make([]Filter, 0), nil
+	}
 	if reflect.TypeOf(layout).Kind() != reflect.Struct {
 		return nil, errors.New("goloquent: filter layout must be struct")
 	}
