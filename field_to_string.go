@@ -151,12 +151,12 @@ func int64ToString(val interface{}) (*string, error) {
 }
 
 func float32ToString(val interface{}) (*string, error) {
-	str := fmt.Sprintf("%.2f", val)
+	str := fmt.Sprintf("%.6f", val)
 	return &str, nil
 }
 
 func float64ToString(val interface{}) (*string, error) {
-	str := strconv.FormatFloat(val.(float64), 'f', 2, 64)
+	str := strconv.FormatFloat(val.(float64), 'f', 6, 64)
 	return &str, nil
 }
 
