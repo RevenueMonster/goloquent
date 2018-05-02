@@ -13,7 +13,7 @@ func (x *SQLAdapter) Count(query *Query) (uint, error) {
 		return 0, err
 	}
 
-	key := "COUNT(*)"
+	key := "COUNT(`$Key`)"
 	sql := fmt.Sprintf("SELECT %s FROM (%s) AS `Master`", key, strings.Join(stmt.Table, " UNION ALL "))
 
 	if len(stmt.Where) > 0 {
