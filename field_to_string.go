@@ -248,10 +248,11 @@ func sliceToString(it interface{}) (*string, error) {
 	case typeOfDataStoreKey:
 		for j := 0; j < v.Len(); j++ {
 			f := v.Index(j)
-			// key := new(datastore.Key)
-			// e := reflect.ValueOf(key).Elem()
-			// e.Set(reflect.Indirect(f))
-			i = append(i, stringKey(f.Interface().(*datastore.Key)))
+			k, err := keyToString(f.Interface())
+			if err != nil {
+				return nil, err
+			}
+			i = append(i, k)
 		}
 
 	default:
