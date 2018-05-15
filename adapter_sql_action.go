@@ -573,12 +573,14 @@ func (x *SQLAdapter) Delete(query *Query, key *datastore.Key) error {
 	if query.table.name != "" {
 		table = query.table.name
 	}
+	args := make([]interface{}, 0)
 	where := fmt.Sprintf(
-		"WHERE `%s` = %q AND `%s` = %q",
-		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
+		"WHERE `%s` = ? AND `%s` = ?",
+		FieldNameKey, FieldNameParent)
+	args = append(args, []interface{}{stringPrimaryKey(key), key.Parent.String()}...)
 	sql := fmt.Sprintf("DELETE FROM `%s` %s;", table, where)
 
-	if _, err := x.Exec(sql); err != nil {
+	if _, err := x.Exec(sql, args); err != nil {
 		return err
 	}
 
@@ -612,12 +614,15 @@ func (x *SQLAdapter) DeleteMulti(query *Query, keys []*datastore.Key) error {
 
 // SoftDelete :
 func (x *SQLAdapter) SoftDelete(query *Query, key *datastore.Key) error {
-	value := fmt.Sprintf("`%s` = %q", FieldNameSoftDelete, time.Now().UTC().Format(MySQLDateTimeFormat))
-	where := fmt.Sprintf("WHERE `%s` = %q AND `%s` = %q",
-		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
+	args := make([]interface{}, 0)
+	value := fmt.Sprintf("`%s` = ?", FieldNameSoftDelete)
+	args = append(args, time.Now().UTC().Format(MySQLDateTimeFormat))
+	where := fmt.Sprintf("WHERE `%s` = ? AND `%s` = ?",
+		FieldNameKey, FieldNameParent)
+	args = append(args, []interface{}{stringPrimaryKey(key), key.Parent.String()}...)
 	sql := fmt.Sprintf("UPDATE `%s` SET %s %s", query.table.name, value, where)
 
-	if _, err := x.Exec(sql); err != nil {
+	if _, err := x.Exec(sql, args); err != nil {
 		return err
 	}
 	return nil

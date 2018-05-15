@@ -179,6 +179,9 @@ func stringToStruct(f *Field, val string) (interface{}, error) {
 		}
 
 	default:
+		if val == "" {
+			return reflect.New(f.Type).Elem().Interface(), nil
+		}
 		m := make(map[string]interface{}, 0)
 		if err := json.Unmarshal([]byte(val), &m); err != nil {
 			return nil, err

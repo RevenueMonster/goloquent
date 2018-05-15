@@ -121,7 +121,7 @@ func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results
 }
 
 // Exec :
-func (x *SQLAdapter) Exec(q string) (sql.Result, error) {
+func (x *SQLAdapter) Exec(q string, args ...interface{}) (sql.Result, error) {
 	go x.sqlDebug(q)
 
 	if x.mode == modeNormal {
