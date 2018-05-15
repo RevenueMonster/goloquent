@@ -278,6 +278,9 @@ func stringToSlice(f *Field, i string) (interface{}, error) {
 		it = keys.Interface()
 
 	default:
+		if i == "" {
+			return reflect.MakeSlice(f.Type, 0, 0).Interface(), nil
+		}
 		s := reflect.New(f.Type)
 		if err := json.Unmarshal([]byte(i), s.Interface()); err != nil {
 			return nil, err
