@@ -35,6 +35,18 @@ func mapToStruct(t reflect.Type, m map[string]interface{}) (interface{}, error) 
 		}
 
 		switch f.Kind() {
+		case reflect.Float32, reflect.Float64:
+			var it float64
+			switch vi := val.(type) {
+			case int64:
+				it = float64(vi)
+			case string:
+				it, _ = strconv.ParseFloat(vi, 64)
+			case []byte:
+				it, _ = strconv.ParseFloat(string(vi), 64)
+			}
+			f.SetFloat(it)
+
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 			var it int64
 			switch vi := val.(type) {
@@ -46,6 +58,7 @@ func mapToStruct(t reflect.Type, m map[string]interface{}) (interface{}, error) 
 				it, _ = strconv.ParseInt(string(vi), 10, 64)
 			}
 			f.SetInt(it)
+
 		default:
 			f.Set(reflect.ValueOf(val))
 		}
@@ -280,6 +293,15 @@ func stringToSlice(f *Field, i string) (interface{}, error) {
 	default:
 		if i == "" {
 			return reflect.MakeSlice(f.Type, 0, 0).Interface(), nil
+		}
+		if f.Type.Kind() == reflect.Struct {
+			// var s []json.RawMessage
+			// if err := json.Unmarshal([]byte(i), s); err != nil {
+			// 	return nil, err
+			// }
+			// for _, vv := range s {
+			// 	stringToStruct(f.)
+			// }
 		}
 		s := reflect.New(f.Type)
 		if err := json.Unmarshal([]byte(i), s.Interface()); err != nil {
