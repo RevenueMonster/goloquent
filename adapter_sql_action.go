@@ -574,17 +574,16 @@ func (x *SQLAdapter) Delete(query *Query, key *datastore.Key) error {
 	if query.table.name != "" {
 		table = query.table.name
 	}
-	args := make([]interface{}, 0)
-	where := fmt.Sprintf(
-		"WHERE `%s` = ? AND `%s` = ?",
-		FieldNameKey, FieldNameParent)
-	args = append(args, []interface{}{stringPrimaryKey(key), key.Parent.String()}...)
-	sql := fmt.Sprintf("DELETE FROM `%s` %s;", table, where)
-
-	if _, err := x.Exec(sql, args); err != nil {
+	buf, args := new(bytes.Buffer), make([]interface{}, 0)
+	buf.WriteString(fmt.Sprintf("DELETE FROM %s ", quote(table)))
+	buf.WriteString(fmt.Sprintf(
+		"WHERE %s = ? AND %s = ?",
+		quote(FieldNameKey), quote(FieldNameParent)))
+	buf.WriteString(";")
+	args = append(args, stringPrimaryKey(key), key.Parent.String())
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
-
 	return nil
 }
 
