@@ -1,10 +1,15 @@
 package goloquent
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
 )
+
+func quote(name string) string {
+	return fmt.Sprintf("`%s`", name)
+}
 
 // Count :
 func (x *SQLAdapter) Count(query *Query) (uint, error) {
@@ -13,31 +18,21 @@ func (x *SQLAdapter) Count(query *Query) (uint, error) {
 		return 0, err
 	}
 
-	key := "COUNT(`$Key`)"
-	sql := fmt.Sprintf("SELECT %s FROM (%s) AS `Master`", key, strings.Join(stmt.Table, " UNION ALL "))
-
+	buf := new(bytes.Buffer)
+	buf.WriteString(fmt.Sprintf("SELECT count(%s) FROM (%s) AS `Master`", quote(FieldNameKey), strings.Join(stmt.Table, " UNION ALL ")))
 	if len(stmt.Where) > 0 {
-		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
+		buf.WriteString(fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND ")))
 	}
 	if len(stmt.Order) > 0 {
-		sql += fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ","))
+		buf.WriteString(fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ",")))
 	}
+	buf.WriteString(";")
 
-	results := make([]map[string][]byte, 0)
-	results, err = x.ExecQuery(sql)
-	if err != nil {
+	var i int
+	if err = x.client.QueryRow(buf.String()).Scan(&i); err != nil {
 		return 0, err
 	}
-
-	intCount := int(0)
-	for _, r := range results {
-		if bc, isExist := r[key]; isExist {
-			intCount, _ = strconv.Atoi(string(bc))
-			break
-		}
-	}
-
-	return uint(intCount), nil
+	return uint(i), nil
 }
 
 // Sum :

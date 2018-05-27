@@ -1,6 +1,7 @@
 package goloquent
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -614,15 +615,16 @@ func (x *SQLAdapter) DeleteMulti(query *Query, keys []*datastore.Key) error {
 
 // SoftDelete :
 func (x *SQLAdapter) SoftDelete(query *Query, key *datastore.Key) error {
-	args := make([]interface{}, 0)
-	value := fmt.Sprintf("`%s` = ?", FieldNameSoftDelete)
-	args = append(args, time.Now().UTC().Format(MySQLDateTimeFormat))
-	where := fmt.Sprintf("WHERE `%s` = ? AND `%s` = ?",
-		FieldNameKey, FieldNameParent)
-	args = append(args, []interface{}{stringPrimaryKey(key), key.Parent.String()}...)
-	sql := fmt.Sprintf("UPDATE `%s` SET %s %s", query.table.name, value, where)
+	buf, args := new(bytes.Buffer), make([]interface{}, 0)
+	buf.WriteString(fmt.Sprintf("UPDATE %s SET %s = ? ", quote(query.table.name), quote(FieldNameSoftDelete)))
+	buf.WriteString(fmt.Sprintf("WHERE %s = ? AND %s = ?;",
+		quote(FieldNameKey), quote(FieldNameParent)))
+	args = append(args,
+		time.Now().UTC().Format(MySQLDateTimeFormat),
+		stringPrimaryKey(key),
+		key.Parent.String())
 
-	if _, err := x.Exec(sql, args); err != nil {
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
 	return nil

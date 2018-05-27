@@ -121,14 +121,22 @@ func (x *SQLAdapter) mapResults(query *Query, e *Entity, t reflect.Type, results
 }
 
 // Exec :
-func (x *SQLAdapter) Exec(q string, args ...interface{}) (sql.Result, error) {
-	go x.sqlDebug(q)
+func (x *SQLAdapter) Exec(query string, args ...interface{}) (sql.Result, error) {
+	go x.sqlDebug(query)
 
 	if x.mode == modeNormal {
-		return x.client.Exec(q)
+		stmt, err := x.client.Prepare(query)
+		if err != nil {
+			return nil, err
+		}
+		return stmt.Exec(args...)
 	}
 
-	return x.txn.Exec(q)
+	stmt, err := x.txn.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+	return stmt.Exec(args...)
 }
 
 // ExecQuery :
