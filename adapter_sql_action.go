@@ -44,19 +44,25 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 	// Generate primary key before insert to database
 	primaryKey := x.newPrimaryKey(table, parentKey)
 
-	fields := make([]string, 0)
-	fields = append(fields, fmt.Sprintf("`%s`", FieldNameKey))
-	fields = append(fields, fmt.Sprintf("`%s`", FieldNameParent))
-
-	vals := make([]string, 0)
-	vals = append(vals, fmt.Sprintf("%q", stringPrimaryKey(primaryKey)))
-	vals = append(vals, fmt.Sprintf("%q", primaryKey.Parent.String()))
+	buf, args := new(bytes.Buffer), make([]interface{}, 0)
+	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
+	buf.WriteString("(")
+	buf.WriteString(quote(FieldNameKey) + ",")
+	buf.WriteString(quote(FieldNameParent) + ",")
+	args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+	for _, f := range cols {
+		buf.WriteString(quote(f.Name) + ",")
+	}
+	buf.Truncate(buf.Len() - 1)
+	buf.WriteString(") ")
+	buf.WriteString(fmt.Sprintf("VALUES (%s);",
+		strings.Trim(strings.Repeat("?,", len(cols)+2), ",")))
 
 	// Run through every property in struct and convert to string
 	v := reflect.ValueOf(modelStruct)
 	if entity.PrimaryKey != nil {
-		f := v.Elem().FieldByIndex(entity.PrimaryKey.Index)
-		f.Set(reflect.ValueOf(primaryKey))
+		fv := v.Elem().FieldByIndex(entity.PrimaryKey.Index)
+		fv.Set(reflect.ValueOf(primaryKey))
 	}
 
 	// Call datastore.PropertyLoadSaver's Save func
@@ -75,26 +81,10 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 		if err != nil {
 			return err
 		}
-
-		val := "NULL"
-		if str != nil {
-			if !(isZero(*str) && fs.Schema.IsNullable) {
-				val = fmt.Sprintf("%s", *str)
-				if fs.Schema.IsEscape {
-					val = fmt.Sprintf("%q", *str)
-				}
-			}
-		}
-
-		fields = append(fields, fmt.Sprintf("`%s`", fs.Name))
-		vals = append(vals, fmt.Sprintf("%s", val))
+		args = append(args, str)
 	}
 
-	sql := fmt.Sprintf(
-		"INSERT INTO `%s` (%v) VALUES (%v);",
-		table, strings.Join(fields, ","), strings.Join(vals, ","))
-
-	if _, err := x.Exec(sql); err != nil {
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
 
@@ -120,21 +110,32 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 	kv := reflect.Indirect(reflect.ValueOf(parentKey))
 	for i := 0; i < v.Len(); i++ {
 		var k *datastore.Key
-		// TODO: allow nil in parent key
 		if kv.Kind() == reflect.Slice {
 			parent := kv.Index(i).Interface().(*datastore.Key)
 			k = x.newPrimaryKey(table, parent)
 		} else {
-			k = x.newPrimaryKey(table, parentKey.(*datastore.Key))
+			switch kk := parentKey.(type) {
+			case *datastore.Key:
+				k = x.newPrimaryKey(table, kk)
+			default:
+				k = x.newPrimaryKey(table, nil)
+			}
 		}
 		pKeys[i] = k
 	}
 
-	fields := make([]string, 0)
-	fields = append(fields, fmt.Sprintf("`%s`", FieldNameKey))
-	fields = append(fields, fmt.Sprintf("`%s`", FieldNameParent))
+	buf, args := new(bytes.Buffer), make([]interface{}, 0)
+	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
+	buf.WriteString("(")
+	buf.WriteString(quote(FieldNameKey) + ",")
+	buf.WriteString(quote(FieldNameParent) + ",")
+	for _, f := range cols {
+		buf.WriteString(quote(f.Name) + ",")
+	}
+	buf.Truncate(buf.Len() - 1)
+	buf.WriteString(") ")
+	buf.WriteString("VALUES ")
 
-	records := make([]string, 0)
 	for i := 0; i < v.Len(); i++ {
 		fv := v.Index(i)
 		if !fv.IsValid() {
@@ -143,12 +144,17 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 
 		// Generate primary key before insert to database
 		primaryKey := pKeys[i]
-		strKey := stringPrimaryKey(primaryKey)
+		buf.WriteString(fmt.Sprintf("(%s),", strings.Trim(strings.Repeat("?,", len(cols)+2), ",")))
+		args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
 
-		vals := make([]string, 0)
-		vals = append(vals, fmt.Sprintf("%q", strKey))
-		vals = append(vals, fmt.Sprintf("%q", primaryKey.Parent.String()))
-
+		if entity.PrimaryKey != nil {
+			vv := fv
+			if fv.Kind() == reflect.Ptr {
+				vv = vv.Elem()
+			}
+			ff := vv.FieldByIndex(entity.PrimaryKey.Index)
+			ff.Set(reflect.ValueOf(primaryKey))
+		}
 		// Call datastore.PropertyLoadSaver's Save func
 		_, err = entity.SaveFunc(fv.Interface())
 		if err != nil {
@@ -170,31 +176,16 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 			if err != nil {
 				return err
 			}
-
-			val := "NULL"
-			if str != nil {
-				if !(isZero(*str) && fs.Schema.IsNullable) {
-					val = fmt.Sprintf("%s", *str)
-					if fs.Schema.IsEscape {
-						val = fmt.Sprintf("%q", *str)
-					}
-				}
-			}
-
-			if i == 0 {
-				fields = append(fields, fmt.Sprintf("`%s`", fs.Name))
-			}
-			vals = append(vals, fmt.Sprintf("%s", val))
+			args = append(args, str)
 		}
-
-		records = append(records, fmt.Sprintf("(%s)", strings.Join(vals, ",")))
 	}
 
-	sql := fmt.Sprintf(
-		"INSERT INTO `%s` (%s) VALUES %s;",
-		table, strings.Join(fields, ","), strings.Join(records, ","))
+	buf.Truncate(buf.Len() - 1)
+	buf.WriteString(";")
 
-	if _, err := x.Exec(sql); err != nil {
+	fmt.Println(buf.String())
+
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
 
@@ -225,34 +216,42 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 
 	// Generate primary key before insert to database
 	primaryKey := x.newPrimaryKey(table, parentKey)
-
-	fields := make([]string, 0)
-	fields = append(fields, fmt.Sprintf("`%s`", FieldNameKey))
-	fields = append(fields, fmt.Sprintf("`%s`", FieldNameParent))
-
-	vals := make([]string, 0)
-	vals = append(vals, fmt.Sprintf("%q", stringPrimaryKey(primaryKey)))
-	vals = append(vals, fmt.Sprintf("%q", primaryKey.Parent.String()))
-
-	// Run through every property in struct and convert to string
-	where := make([]string, 0)
 	v := reflect.ValueOf(modelStruct)
 	if entity.PrimaryKey != nil {
 		f := v.Elem().FieldByIndex(entity.PrimaryKey.Index)
 		f.Set(reflect.ValueOf(primaryKey))
 	}
 
+	buf, args := new(bytes.Buffer), make([]interface{}, 0)
+	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
+	buf.WriteString("(")
+	buf.WriteString(quote(FieldNameKey) + ",")
+	buf.WriteString(quote(FieldNameParent) + ",")
+	args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
 	if entity.SoftDelete != nil {
-		fields = append(fields, fmt.Sprintf("`%s`", FieldNameSoftDelete))
+		buf.WriteString(quote(FieldNameSoftDelete) + ",")
 		f := v.Elem().FieldByIndex(entity.SoftDelete.Index)
 		sd := f.Interface().(SoftDelete)
-		strSoftDelete := "NULL"
+		var softDelete interface{}
 		if !isZero(sd.DeletedDateTime) {
-			strSoftDelete = fmt.Sprintf("%q", sd.DeletedDateTime.Format(MySQLDateTimeFormat))
+			softDelete = sd.DeletedDateTime.Format(MySQLDateTimeFormat)
 		}
-		where = append(where, fmt.Sprintf("`%s`=VALUES(`%s`)", FieldNameSoftDelete, FieldNameSoftDelete))
-		vals = append(vals, strSoftDelete)
+		args = append(args, softDelete)
 	}
+	onConflict := make([]string, 0, len(cols))
+	for _, f := range cols {
+		name := quote(f.Name)
+		buf.WriteString(name + ",")
+		if _, isOk := excludedFields[name]; !isOk {
+			onConflict = append(onConflict, fmt.Sprintf("%s=VALUES(%s)", name, name))
+		}
+	}
+	buf.Truncate(buf.Len() - 1)
+	buf.WriteString(") ")
+	buf.WriteString(fmt.Sprintf("VALUES (%s) ",
+		strings.Trim(strings.Repeat("?,", len(cols)+2), ",")))
+	buf.WriteString(fmt.Sprintf("ON DUPLICATE KEY UPDATE %s;",
+		strings.Join(onConflict, ",")))
 
 	for _, fs := range cols {
 		f := getField(v.Elem(), fs.Index)
@@ -264,30 +263,10 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 		if err != nil {
 			return err
 		}
-
-		val := "NULL"
-		if str != nil {
-			if !(isZero(*str) && fs.Schema.IsNullable) {
-				val = fmt.Sprintf("%s", *str)
-				if fs.Schema.IsEscape {
-					val = fmt.Sprintf("%q", *str)
-				}
-			}
-		}
-
-		if _, isOk := excludedFields[fs.Name]; !isOk {
-			where = append(where, fmt.Sprintf("`%s`=VALUES(`%s`)", fs.Name, fs.Name))
-		}
-
-		fields = append(fields, fmt.Sprintf("`%s`", fs.Name))
-		vals = append(vals, fmt.Sprintf("%s", val))
+		args = append(args, str)
 	}
 
-	sql := fmt.Sprintf(
-		"INSERT INTO `%s` (%v) VALUES (%v) ON DUPLICATE KEY UPDATE %s;",
-		table, strings.Join(fields, ","), strings.Join(vals, ","), strings.Join(where, ","))
-
-	if _, err := x.Exec(sql); err != nil {
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
 
@@ -318,7 +297,12 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 			parent := kv.Index(i).Interface().(*datastore.Key)
 			k = x.newPrimaryKey(table, parent)
 		} else {
-			k = x.newPrimaryKey(table, parentKey.(*datastore.Key))
+			switch kk := parentKey.(type) {
+			case *datastore.Key:
+				k = x.newPrimaryKey(table, kk)
+			default:
+				k = x.newPrimaryKey(table, nil)
+			}
 		}
 		pKeys[i] = k
 	}
@@ -333,13 +317,26 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		excludedFields[fieldName] = true
 	}
 
-	fields := make([]string, 0)
-	fields = append(fields, fmt.Sprintf("`%s`", FieldNameKey))
-	fields = append(fields, fmt.Sprintf("`%s`", FieldNameParent))
+	buf, args := new(bytes.Buffer), make([]interface{}, 0)
+	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
+	buf.WriteString("(")
+	buf.WriteString(quote(FieldNameKey) + ",")
+	buf.WriteString(quote(FieldNameParent) + ",")
+	if entity.SoftDelete != nil {
+		buf.WriteString(quote(FieldNameSoftDelete) + ",")
+	}
+	onConflict := make([]string, 0, len(cols))
+	for _, f := range cols {
+		name := quote(f.Name)
+		buf.WriteString(name + ",")
+		if _, isOk := excludedFields[name]; !isOk {
+			onConflict = append(onConflict, fmt.Sprintf("%s=VALUES(%s)", name, name))
+		}
+	}
+	buf.Truncate(buf.Len() - 1)
+	buf.WriteString(") ")
+	buf.WriteString("VALUES ")
 
-	colNames := make([]string, 0)
-
-	records := make([]string, 0)
 	for i := 0; i < v.Len(); i++ {
 		fv := v.Index(i)
 		if !fv.IsValid() {
@@ -348,13 +345,35 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 
 		// Generate primary key before insert to database
 		primaryKey := pKeys[i]
-		strKey := stringPrimaryKey(primaryKey)
+		if entity.PrimaryKey != nil {
+			ff := getField(fv, entity.PrimaryKey.Index)
+			ff.Set(reflect.ValueOf(primaryKey))
+		}
 
-		vals := make([]string, 0)
-		vals = append(vals, fmt.Sprintf("%q", strKey))
-		vals = append(vals, fmt.Sprintf("%q", primaryKey.Parent.String()))
+		j := 2
+		args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+		if entity.SoftDelete != nil {
+			j++
+			f := v.Elem().FieldByIndex(entity.SoftDelete.Index)
+			sd := f.Interface().(SoftDelete)
+			var softDelete interface{}
+			if !isZero(sd.DeletedDateTime) {
+				softDelete = sd.DeletedDateTime.Format(MySQLDateTimeFormat)
+			}
+			args = append(args, softDelete)
+		}
+		buf.WriteString(fmt.Sprintf("(%s),",
+			strings.Trim(strings.Repeat("?,", len(cols)+j), ",")))
 
-		// Call datastore.PropertyLoadSaver's Save func
+		if entity.PrimaryKey != nil {
+			vv := fv
+			if fv.Kind() == reflect.Ptr {
+				vv = vv.Elem()
+			}
+			ff := vv.FieldByIndex(entity.PrimaryKey.Index)
+			ff.Set(reflect.ValueOf(primaryKey))
+		}
+
 		_, err = entity.SaveFunc(fv.Interface())
 		if err != nil {
 			return err
@@ -375,49 +394,17 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 			if err != nil {
 				return err
 			}
-
-			val := "NULL"
-			if str != nil {
-				if !(isZero(*str) && fs.Schema.IsNullable) {
-					val = fmt.Sprintf("%s", *str)
-					if fs.Schema.IsEscape {
-						val = fmt.Sprintf("%q", *str)
-					}
-				}
-			}
-
-			if i == 0 {
-				name := fs.Name
-				if _, isOk := excludedFields[fs.Name]; !isOk {
-					colNames = append(colNames, fmt.Sprintf("`%s`=VALUES(`%s`)", name, name))
-				}
-				fields = append(fields, fmt.Sprintf("`%s`", name))
-			}
-			vals = append(vals, fmt.Sprintf("%s", val))
+			args = append(args, str)
 		}
-
-		if entity.SoftDelete != nil {
-			if i == 0 {
-				colNames = append(colNames, fmt.Sprintf("`%s`=VALUES(`%s`)", FieldNameSoftDelete, FieldNameSoftDelete))
-				fields = append(fields, fmt.Sprintf("`%s`", FieldNameSoftDelete))
-			}
-			f := fv.FieldByIndex(entity.SoftDelete.Index)
-			sd := f.Interface().(SoftDelete)
-			strSoftDelete := "NULL"
-			if !isZero(sd.DeletedDateTime) {
-				strSoftDelete = fmt.Sprintf("%q", sd.DeletedDateTime.Format(MySQLDateTimeFormat))
-			}
-			vals = append(vals, strSoftDelete)
-		}
-
-		records = append(records, fmt.Sprintf("(%s)", strings.Join(vals, ",")))
 	}
 
-	sql := fmt.Sprintf(
-		"INSERT INTO `%s` (%s) VALUES %s ON DUPLICATE KEY UPDATE %s;",
-		table, strings.Join(fields, ","), strings.Join(records, ","), strings.Join(colNames, ","))
+	buf.Truncate(buf.Len() - 1)
+	buf.WriteString(fmt.Sprintf(" ON DUPLICATE KEY UPDATE %s;",
+		strings.Join(onConflict, ",")))
 
-	if _, err := x.Exec(sql); err != nil {
+	fmt.Println(buf.String())
+
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
 
@@ -435,9 +422,6 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 
 	table := getTableName(entity, query)
 	cols := entity.GetFields()
-	vals := make([]string, 0)
-
-	// Run through every property in struct and convert to string
 	v := reflect.ValueOf(modelStruct)
 	if entity.PrimaryKey == nil {
 		return ErrMissingPrimaryKey
@@ -454,6 +438,8 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 		return ErrMissingPrimaryKey
 	}
 	primaryKey := k.Interface().(*datastore.Key)
+	buf, args := new(bytes.Buffer), make([]interface{}, 0)
+	buf.WriteString(fmt.Sprintf("UPDATE %s SET ", quote(table)))
 
 	for _, fs := range cols {
 		f := getField(v.Elem(), fs.Index)
@@ -472,33 +458,22 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 			}
 		}
 
-		val := "NULL"
-		if str != nil {
-			if !(isZero(*str) && fs.Schema.IsNullable) {
-				val = fmt.Sprintf("%s", *str)
-				if fs.Schema.IsEscape {
-					val = fmt.Sprintf("%q", *str)
-				}
-			}
-		}
-
-		vals = append(vals, fmt.Sprintf("`%s` = %s", fs.Name, val))
+		buf.WriteString(fmt.Sprintf("%s = ?,", quote(fs.Name)))
+		args = append(args, str)
 	}
 
 	if primaryKey.Incomplete() {
 		return errors.New("goloquent: primary key not found")
 	}
 
-	cond := fmt.Sprintf(
-		"`%s` = %q AND `%s` = %q",
-		FieldNameKey, stringPrimaryKey(primaryKey),
-		FieldNameParent, primaryKey.Parent.String())
+	buf.Truncate(buf.Len() - 1)
+	buf.WriteString(fmt.Sprintf(" WHERE %s = ? AND %s = ?",
+		quote(FieldNameKey), quote(FieldNameParent)))
+	buf.WriteString(";")
+	args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
 
-	sql := fmt.Sprintf(
-		"UPDATE `%s` SET %s WHERE %s;",
-		table, strings.Join(vals, ","), cond)
-
-	if _, err := x.Exec(sql); err != nil {
+	fmt.Println(buf.String())
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
 
@@ -507,20 +482,24 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 
 // UpdateMulti :
 func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
-
 	table := query.table.name
 	stmt, err := x.CompileStatement(query)
 	if err != nil {
 		return err
 	}
 
+	buf, args := new(bytes.Buffer), make([]interface{}, 0)
+	buf.WriteString(fmt.Sprintf("UPDATE %s SET ", quote(table)))
 	v := reflect.Indirect(reflect.ValueOf(modelStruct))
-	vals := make([]string, 0)
 	if v.Kind() == reflect.Map {
+		if v.Len() <= 0 {
+			return errors.New("goloquent: no update field provided")
+		}
+
 		for _, key := range v.MapKeys() {
 			f := v.MapIndex(key)
 
-			strVal := "NULL"
+			var vv interface{}
 			if !f.IsNil() {
 				t := reflect.TypeOf(f.Interface())
 				if t.Kind() == reflect.Ptr {
@@ -532,36 +511,26 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 					return ErrUnsupportDataType
 				}
 
-				str, _ := parseFunc(f.Interface())
-				if str != nil {
-					strVal = fmt.Sprintf("%s", *str)
-					if !isNumber(t) {
-						strVal = fmt.Sprintf("%q", *str)
-					}
-				}
+				vv, _ = parseFunc(f.Interface())
 			}
 
-			vals = append(vals, fmt.Sprintf("`%s` = %s", key, strVal))
+			buf.WriteString(fmt.Sprintf("%s = ?,", quote(key.String())))
+			args = append(args, vv)
 		}
 	} else {
-		// TODO: struct
 		return fmt.Errorf("goloquent: unsupported data type %v", v)
 	}
+	buf.Truncate(buf.Len() - 1)
 
-	if len(vals) <= 0 {
-		return errors.New("goloquent: no update field provided")
-	}
-
-	sql := fmt.Sprintf("UPDATE `%s` SET %s", table, strings.Join(vals, ","))
 	if len(stmt.Where) > 0 {
-		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
+		buf.WriteString(fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND ")))
 	}
 	if stmt.Limit > 0 {
-		sql += fmt.Sprintf(" LIMIT %d", stmt.Limit)
+		buf.WriteString(fmt.Sprintf(" LIMIT %d", stmt.Limit))
 	}
-	sql += ";"
-
-	if _, err := x.Exec(sql); err != nil {
+	buf.WriteString(";")
+	fmt.Println(buf.String())
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
 
@@ -589,23 +558,21 @@ func (x *SQLAdapter) Delete(query *Query, key *datastore.Key) error {
 
 // DeleteMulti :
 func (x *SQLAdapter) DeleteMulti(query *Query, keys []*datastore.Key) error {
-	pks := make([]string, 0)
+	args := make([]interface{}, 0)
 	for _, key := range keys {
-		strPK := fmt.Sprintf("%q", stringPrimaryKey(key)+key.Parent.String())
-		pks = append(pks, strPK)
+		args = append(args, key.Parent.String()+"/"+stringPrimaryKey(key))
 	}
 
 	table := query.table.name
-	list := fmt.Sprintf(
-		"SELECT CONCAT(`%s`, `%s`) AS `%s`",
-		FieldNameKey,
-		FieldNameParent,
-		FieldNamePrimaryKey)
-	sql := fmt.Sprintf(
-		"DELETE FROM `%s` WHERE (%s) IN (%s)",
-		table, list, strings.Join(pks, ","))
+	buf := new(bytes.Buffer)
+	buf.WriteString(fmt.Sprintf("DELETE FROM %s ", quote(table)))
+	buf.WriteString(fmt.Sprintf("WHERE concat(%s,%q,%s) IN (%s)",
+		quote(FieldNameParent),
+		"/",
+		quote(FieldNameKey),
+		strings.Trim(strings.Repeat("?,", len(args)), ",")))
 
-	if _, err := x.Exec(sql); err != nil {
+	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
 
@@ -615,9 +582,12 @@ func (x *SQLAdapter) DeleteMulti(query *Query, keys []*datastore.Key) error {
 // SoftDelete :
 func (x *SQLAdapter) SoftDelete(query *Query, key *datastore.Key) error {
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
-	buf.WriteString(fmt.Sprintf("UPDATE %s SET %s = ? ", quote(query.table.name), quote(FieldNameSoftDelete)))
+	buf.WriteString(fmt.Sprintf("UPDATE %s SET %s = ? ",
+		quote(query.table.name),
+		quote(FieldNameSoftDelete)))
 	buf.WriteString(fmt.Sprintf("WHERE %s = ? AND %s = ?;",
-		quote(FieldNameKey), quote(FieldNameParent)))
+		quote(FieldNameKey),
+		quote(FieldNameParent)))
 	args = append(args,
 		time.Now().UTC().Format(MySQLDateTimeFormat),
 		stringPrimaryKey(key),

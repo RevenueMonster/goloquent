@@ -276,11 +276,11 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		sql += fmt.Sprintf(" OFFSET %d", query.offset)
 	}
 
-	var total uint
-	total, err = x.Count(query)
-	if err != nil {
-		return err
-	}
+	// var total uint
+	// total, err = x.Count(query)
+	// if err != nil {
+	// 	return err
+	// }
 
 	results := make([]map[string][]byte, 0)
 	results, err = x.ExecQuery(sql)
@@ -320,7 +320,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	reflect.Copy(copy, slice)
 
 	// Sync pagination data
-	p.Total = total
+	// p.Total = total
 
 	iv := reflect.Indirect(reflect.ValueOf(modelStruct))
 	iv.Set(copy)

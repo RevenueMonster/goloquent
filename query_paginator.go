@@ -6,6 +6,6 @@ type Pagination struct {
 	Filter  interface{} `json:"filter,omitempty" form:"filter"`
 	OrderBy []string    `json:"order,omitempty" form:"order"`
 	Count   uint        `json:"-"`
-	Total   uint        `json:"-"`
 	Limit   uint        `json:"-"`
+	// Total   uint        `json:"-"`
 }
