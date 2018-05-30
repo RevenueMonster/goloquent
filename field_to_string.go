@@ -135,7 +135,12 @@ func strToString(val interface{}) (*string, error) {
 }
 
 func boolToString(val interface{}) (*string, error) {
-	str := fmt.Sprintf("%t", val)
+	var str string
+	if val == true {
+		str = "1"
+	} else {
+		str = "0"
+	}
 	return &str, nil
 }
 
