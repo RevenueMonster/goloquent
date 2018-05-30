@@ -183,8 +183,6 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 	buf.Truncate(buf.Len() - 1)
 	buf.WriteString(";")
 
-	fmt.Println(buf.String())
-
 	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
@@ -402,8 +400,6 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 	buf.WriteString(fmt.Sprintf(" ON DUPLICATE KEY UPDATE %s;",
 		strings.Join(onConflict, ",")))
 
-	fmt.Println(buf.String())
-
 	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
@@ -472,7 +468,6 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 	buf.WriteString(";")
 	args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
 
-	fmt.Println(buf.String())
 	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
@@ -529,7 +524,6 @@ func (x *SQLAdapter) UpdateMulti(query *Query, modelStruct interface{}) error {
 		buf.WriteString(fmt.Sprintf(" LIMIT %d", stmt.Limit))
 	}
 	buf.WriteString(";")
-	fmt.Println(buf.String())
 	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
