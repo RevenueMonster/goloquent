@@ -81,7 +81,17 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 		if err != nil {
 			return err
 		}
-		args = append(args, str)
+
+		var val interface{}
+		if str != nil {
+			if isZero(*str) && fs.Schema.IsNullable {
+				val = nil
+			} else {
+				val = str
+			}
+		}
+
+		args = append(args, val)
 	}
 
 	if _, err := x.Exec(buf.String(), args...); err != nil {
@@ -176,7 +186,16 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 			if err != nil {
 				return err
 			}
-			args = append(args, str)
+
+			var val interface{}
+			if str != nil {
+				if isZero(*str) && fs.Schema.IsNullable {
+					val = nil
+				} else {
+					val = str
+				}
+			}
+			args = append(args, val)
 		}
 	}
 
@@ -261,7 +280,16 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 		if err != nil {
 			return err
 		}
-		args = append(args, str)
+
+		var val interface{}
+		if str != nil {
+			if isZero(*str) && fs.Schema.IsNullable {
+				val = nil
+			} else {
+				val = str
+			}
+		}
+		args = append(args, val)
 	}
 
 	if _, err := x.Exec(buf.String(), args...); err != nil {
@@ -392,7 +420,16 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 			if err != nil {
 				return err
 			}
-			args = append(args, str)
+
+			var val interface{}
+			if str != nil {
+				if isZero(*str) && fs.Schema.IsNullable {
+					val = nil
+				} else {
+					val = str
+				}
+			}
+			args = append(args, val)
 		}
 	}
 
@@ -454,8 +491,16 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 			}
 		}
 
+		var val interface{}
+		if str != nil {
+			if isZero(*str) && fs.Schema.IsNullable {
+				val = nil
+			} else {
+				val = str
+			}
+		}
 		buf.WriteString(fmt.Sprintf("%s = ?,", quote(fs.Name)))
-		args = append(args, str)
+		args = append(args, val)
 	}
 
 	if primaryKey.Incomplete() {
