@@ -239,6 +239,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 		f.Set(reflect.ValueOf(primaryKey))
 	}
 
+	j := 2
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
 	buf.WriteString("(")
@@ -246,6 +247,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 	buf.WriteString(quote(FieldNameParent) + ",")
 	args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
 	if entity.SoftDelete != nil {
+		j++
 		buf.WriteString(quote(FieldNameSoftDelete) + ",")
 		f := v.Elem().FieldByIndex(entity.SoftDelete.Index)
 		sd := f.Interface().(SoftDelete)
@@ -266,7 +268,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 	buf.Truncate(buf.Len() - 1)
 	buf.WriteString(") ")
 	buf.WriteString(fmt.Sprintf("VALUES (%s) ",
-		strings.Trim(strings.Repeat("?,", len(cols)+2), ",")))
+		strings.Trim(strings.Repeat("?,", len(cols)+j), ",")))
 	buf.WriteString(fmt.Sprintf("ON DUPLICATE KEY UPDATE %s;",
 		strings.Join(onConflict, ",")))
 
@@ -390,15 +392,6 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		}
 		buf.WriteString(fmt.Sprintf("(%s),",
 			strings.Trim(strings.Repeat("?,", len(cols)+j), ",")))
-
-		if entity.PrimaryKey != nil {
-			vv := fv
-			if fv.Kind() == reflect.Ptr {
-				vv = vv.Elem()
-			}
-			ff := vv.FieldByIndex(entity.PrimaryKey.Index)
-			ff.Set(reflect.ValueOf(primaryKey))
-		}
 
 		_, err = entity.SaveFunc(fv.Interface())
 		if err != nil {
