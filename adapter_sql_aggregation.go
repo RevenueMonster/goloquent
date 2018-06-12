@@ -19,7 +19,7 @@ func (x *SQLAdapter) Count(query *Query) (uint, error) {
 	}
 
 	buf := new(bytes.Buffer)
-	buf.WriteString(fmt.Sprintf("SELECT count(%s) FROM (%s) AS `Master`", quote(FieldNameKey), strings.Join(stmt.Table, " UNION ALL ")))
+	buf.WriteString(fmt.Sprintf("SELECT count(%s) FROM (%s) AS `Master`", quote(FieldNameKey), strings.Join(stmt.Tables, " UNION ALL ")))
 	if len(stmt.Where) > 0 {
 		buf.WriteString(fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND ")))
 	}

@@ -30,15 +30,15 @@ func (t *Table) getSQLAdapter() (*SQLAdapter, error) {
 }
 
 // Union :
-func (t *Table) Union(tables ...string) *Query {
-	q := newQuery(t)
-	_, err := t.getSQLAdapter()
-	if err != nil {
-		q.errs = append(q.errs, err)
-	}
-	q.tables = append(q.tables, tables...)
-	return q
-}
+// func (t *Table) Union(tables ...string) *Query {
+// 	q := newQuery(t)
+// 	_, err := t.getSQLAdapter()
+// 	if err != nil {
+// 		q.errs = append(q.errs, err)
+// 	}
+// 	q.tables = append(q.tables, tables...)
+// 	return q
+// }
 
 // Find :
 func (t *Table) Find(key *datastore.Key, modelStruct interface{}) error {

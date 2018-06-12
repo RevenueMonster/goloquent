@@ -7,6 +7,17 @@ import (
 	"strings"
 )
 
+func (x *SQLAdapter) getIndexes(table string) (idxs []string) {
+	stmt := "SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME <> ?;"
+	rows, _ := x.Query(stmt, x.dbName, table, "PRIMARY")
+	defer rows.Close()
+	for i := 0; rows.Next(); i++ {
+		idxs = append(idxs, "")
+		rows.Scan(&idxs[i])
+	}
+	return
+}
+
 // Migrate : create table base on the struct schema
 func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	t := reflect.TypeOf(modelStruct)
@@ -20,6 +31,8 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 
 	cols := entity.GetFields()
 	columns := make([]*Field, 0)
+	columns = append(columns, &Field{"$PrimaryKey", "$PrimaryKey", true, false, nil, nil,
+		&FieldSchema{fmt.Sprintf("varchar(%d)", KeyLength), nil, true, false, false, false, latin2CharSet}, nil})
 	columns = append(columns, &Field{FieldNameKey, FieldNameKey, true, false, nil, nil,
 		&FieldSchema{fmt.Sprintf("varchar(%d)", IDLength), nil, true, false, false, false, latin2CharSet}, nil})
 	columns = append(columns, &Field{FieldNameParent, FieldNameParent, true, false, nil, nil,
@@ -42,29 +55,25 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	}
 
 	if len(results) > 0 {
-		sqlIndex := fmt.Sprintf(
-			"SELECT DISTINCT INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS WHERE TABLE_SCHEMA = %q AND TABLE_NAME = %q;",
-			x.dbName, table)
+		idxs := newDictionary(x.getIndexes(table))
+		// indexResults := make([]map[string][]byte, 0)
+		// indexResults, err = x.ExecQuery(sqlIndex)
+		// if err != nil {
+		// 	return err
+		// }
 
-		indexResults := make([]map[string][]byte, 0)
-		indexResults, err = x.ExecQuery(sqlIndex)
-
-		if err != nil {
-			return err
-		}
-
-		delIndexes := make([]string, 0)
+		// delIndexes := make([]string, 0)
 		syncColumns := make([]*Field, 0)
 		newColumns := make([]*Field, 0)
 		delColumns := make([]string, 0)
 
-		for _, item := range indexResults {
-			idx := strings.TrimSpace(string(item["INDEX_NAME"]))
-			if idx == FieldNamePrimaryKey {
-				continue
-			}
-			delIndexes = append(delIndexes, idx)
-		}
+		// for _, item := range indexResults {
+		// 	idx := strings.TrimSpace(string(item["INDEX_NAME"]))
+		// 	if idx == FieldNamePrimaryKey {
+		// 		continue
+		// 	}
+		// 	delIndexes = append(delIndexes, idx)
+		// }
 
 		columnList := make(map[string]int, 0)
 		for i, item := range results {
@@ -108,12 +117,12 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 			stmt = append(stmt, strings.Join(script, ","))
 		}
 
-		if len(delIndexes) > 0 {
-			for i, item := range delIndexes {
-				delIndexes[i] = fmt.Sprintf("DROP INDEX `%s`", item)
-			}
-			stmt = append(stmt, strings.Join(delIndexes, ","))
-		}
+		// if len(delIndexes) > 0 {
+		// 	for i, item := range delIndexes {
+		// 		delIndexes[i] = fmt.Sprintf("DROP INDEX `%s`", item)
+		// 	}
+		// 	stmt = append(stmt, strings.Join(delIndexes, ","))
+		// }
 
 		if len(syncColumns) > 0 {
 			script := x.toSQLSchema(syncColumns)
@@ -134,11 +143,23 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 			}
 			stmt = append(stmt, strings.Join(delColumns, ","))
 		}
+
 		sql += " " + strings.Join(stmt, ",")
 		sql += ";"
 
 		if _, err := x.Exec(sql); err != nil {
 			return err
+		}
+
+		sql = fmt.Sprintf("UPDATE `%s` SET `$PrimaryKey` = concat(`$Parent`,%q,`$Key`);", table, "/")
+		if _, err := x.Exec(sql); err != nil {
+			return err
+		}
+
+		if !idxs.has("PrimaryKey_unique") {
+			if _, err := x.Exec(fmt.Sprintf("ALTER TABLE `%s` ADD UNIQUE INDEX `PrimaryKey_unique` (`$PrimaryKey`)", table)); err != nil {
+				return err
+			}
 		}
 
 		return nil

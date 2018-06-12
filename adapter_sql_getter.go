@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"cloud.google.com/go/datastore"
@@ -33,7 +32,7 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", strings.Join(stmt.Table, " UNION ALL "), cond)
+	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", strings.Join(stmt.Tables, " UNION ALL "), cond)
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" AND %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -86,7 +85,7 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 	}
 
 	q := fmt.Sprintf("SELECT * FROM (%s) AS Master",
-		strings.Join(stmt.Table, " UNION ALL "))
+		strings.Join(stmt.Tables, " UNION ALL "))
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -151,8 +150,7 @@ func (x *SQLAdapter) Get(query *Query, modelStruct interface{}) error {
 		return err
 	}
 
-	sql := fmt.Sprintf("SELECT * FROM (%s) AS Master",
-		strings.Join(stmt.Table, " UNION ALL "))
+	sql := stmt.Tables[0]
 	if len(stmt.Where) > 0 {
 		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
 	}
@@ -214,53 +212,58 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		return err
 	}
 
-	sql := ""
-	selectStmt := fmt.Sprintf("SELECT * FROM (%s) AS Master",
-		strings.Join(stmt.Table, " UNION ALL "))
-	if len(stmt.Where) > 0 {
-		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
-	}
-	if len(stmt.Order) > 0 {
-		sql += fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ","))
-	}
+	// if p.Cursor != "" {
 
+	// 	colKey := "RowNumber"
+	// 	sql2 := fmt.Sprintf(
+	// 		"%s JOIN (SELECT @ROW_NUM := 0) AS Record",
+	// 		fmt.Sprintf(
+	// 			"SELECT @ROW_NUM := @ROW_NUM + 1 as RowNumber, `%s`, `%s` FROM (%s) AS Master",
+	// 			FieldNameParent, FieldNameKey, strings.Join(stmt.Table, " UNION ALL "))) + sql
+
+	// 	sql2 = fmt.Sprintf(
+	// 		"SELECT %s FROM (%s) AS Temp WHERE CONCAT(Temp.`%s`,%q,Temp.`%s`) = %q;",
+	// 		colKey, sql2, FieldNameParent, "/", FieldNameKey,
+	// 		cursorKey.Parent.String()+"/"+stringPrimaryKey(cursorKey))
+
+	// 	resp := make([]map[string][]byte, 0)
+	// 	resp, err = x.ExecQuery(sql2)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	var offset int64
+	// 	offset, err = strconv.ParseInt(string(resp[0][colKey]), 10, 64)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+
+	// 	if offset > 0 {
+	// 		offset--
+	// 	}
+	// 	query.offset = uint(offset)
+	// }
+
+	args := make([]interface{}, 0)
 	if p.Cursor != "" {
 		var cursorKey *datastore.Key
 		cursorKey, err = datastore.DecodeKey(p.Cursor)
 		if err != nil {
 			return errors.New("goloquent: invalid cursor key")
 		}
-
-		colKey := "RowNumber"
-		sql2 := fmt.Sprintf(
-			"%s JOIN (SELECT @ROW_NUM := 0) AS Record",
-			fmt.Sprintf(
-				"SELECT @ROW_NUM := @ROW_NUM + 1 as RowNumber, `%s`, `%s` FROM (%s) AS Master",
-				FieldNameParent, FieldNameKey, strings.Join(stmt.Table, " UNION ALL "))) + sql
-
-		sql2 = fmt.Sprintf(
-			"SELECT %s FROM (%s) AS Temp WHERE CONCAT(Temp.`%s`,%q,Temp.`%s`) = %q;",
-			colKey, sql2, FieldNameParent, "/", FieldNameKey,
-			cursorKey.Parent.String()+"/"+stringPrimaryKey(cursorKey))
-
-		resp := make([]map[string][]byte, 0)
-		resp, err = x.ExecQuery(sql2)
-		if err != nil {
-			return err
-		}
-
-		var offset int64
-		offset, err = strconv.ParseInt(string(resp[0][colKey]), 10, 64)
-		if err != nil {
-			return err
-		}
-
-		if offset > 0 {
-			offset--
-		}
-		query.offset = uint(offset)
+		stmt.Where = append(stmt.Where, "`$PrimaryKey` >= ?")
+		args = append(args, cursorKey.Parent.String()+"/"+stringPrimaryKey(cursorKey))
 	}
+	stmt.Order = append(stmt.Order, "`$PrimaryKey` ASC")
 
+	sql := ""
+	selectStmt := stmt.Tables[0]
+	if len(stmt.Where) > 0 {
+		sql += fmt.Sprintf(" WHERE %s", strings.Join(stmt.Where, " AND "))
+	}
+	if len(stmt.Order) > 0 {
+		sql += fmt.Sprintf(" ORDER BY %s", strings.Join(stmt.Order, ","))
+	}
 	sql = selectStmt + sql
 
 	cap := p.Limit
@@ -283,7 +286,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	// }
 
 	results := make([]map[string][]byte, 0)
-	results, err = x.ExecQuery(sql)
+	results, err = x.ExecQuery(sql, args...)
 	if err != nil {
 		return err
 	}

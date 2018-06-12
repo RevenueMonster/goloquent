@@ -26,7 +26,7 @@ const (
 	OperatorNotIn              = "$nin"
 	DefaultTotalRecord         = uint(100)
 	IDLength                   = 50
-	KeyLength                  = 767
+	KeyLength                  = 512
 	TextLength                 = 255
 	MaxKeyLength               = 1500
 	MaxRecordInsert            = uint(500)

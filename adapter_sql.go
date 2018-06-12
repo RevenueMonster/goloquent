@@ -25,7 +25,8 @@ type SQLAdapter struct {
 
 // Statement :
 type Statement struct {
-	Table  []string
+	Table  string
+	Tables []string
 	Where  []string
 	Order  []string
 	Limit  uint
@@ -131,12 +132,19 @@ func (x *SQLAdapter) Exec(query string, args ...interface{}) (sql.Result, error)
 		}
 		return stmt.Exec(args...)
 	}
-
 	stmt, err := x.txn.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
 	return stmt.Exec(args...)
+}
+
+// Query :
+func (x *SQLAdapter) Query(q string, args ...interface{}) (*sql.Rows, error) {
+	if x.mode == modeNormal {
+		return x.client.Query(q, args...)
+	}
+	return x.txn.Query(q, args...)
 }
 
 // ExecQuery :
@@ -293,7 +301,7 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 		}
 	}
 
-	order = append(order, fmt.Sprintf("CONCAT(`%s`,%q,`%s`) ASC", FieldNameParent, "/", FieldNameKey))
+	// order = append(order, fmt.Sprintf("CONCAT(`%s`,%q,`%s`) ASC", FieldNameParent, "/", FieldNameKey))
 
 	locked := ""
 	if x.mode == modeTransaction {
@@ -309,7 +317,7 @@ func (x *SQLAdapter) CompileStatement(query *Query) (*Statement, error) {
 	}
 
 	stmt := &Statement{
-		Table:  table,
+		Tables: table,
 		Where:  where,
 		Order:  order,
 		Limit:  query.limit,

@@ -47,9 +47,11 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
 	buf.WriteString("(")
+	buf.WriteString(quote(FieldNamePrimaryKey) + ",")
 	buf.WriteString(quote(FieldNameKey) + ",")
 	buf.WriteString(quote(FieldNameParent) + ",")
-	args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+	kk, pp := stringPrimaryKey(primaryKey), primaryKey.Parent.String()
+	args = append(args, pp+"/"+kk, kk, pp)
 	for _, f := range cols {
 		buf.WriteString(quote(f.Name) + ",")
 	}
@@ -137,6 +139,7 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
 	buf.WriteString("(")
+	buf.WriteString(quote(FieldNamePrimaryKey) + ",")
 	buf.WriteString(quote(FieldNameKey) + ",")
 	buf.WriteString(quote(FieldNameParent) + ",")
 	for _, f := range cols {
@@ -155,7 +158,8 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 		// Generate primary key before insert to database
 		primaryKey := pKeys[i]
 		buf.WriteString(fmt.Sprintf("(%s),", strings.Trim(strings.Repeat("?,", len(cols)+2), ",")))
-		args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+		kk, pp := stringPrimaryKey(primaryKey), primaryKey.Parent.String()
+		args = append(args, pp+"/"+kk, kk, pp)
 
 		if entity.PrimaryKey != nil {
 			vv := fv
@@ -243,9 +247,12 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
 	buf.WriteString("(")
+	buf.WriteString(quote(FieldNamePrimaryKey) + ",")
 	buf.WriteString(quote(FieldNameKey) + ",")
 	buf.WriteString(quote(FieldNameParent) + ",")
-	args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+	// args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+	kk, pp := stringPrimaryKey(primaryKey), primaryKey.Parent.String()
+	args = append(args, pp+"/"+kk, kk, pp)
 	if entity.SoftDelete != nil {
 		j++
 		buf.WriteString(quote(FieldNameSoftDelete) + ",")
@@ -348,6 +355,7 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
 	buf.WriteString("(")
+	buf.WriteString(quote(FieldNamePrimaryKey) + ",")
 	buf.WriteString(quote(FieldNameKey) + ",")
 	buf.WriteString(quote(FieldNameParent) + ",")
 	if entity.SoftDelete != nil {
@@ -379,7 +387,9 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 		}
 
 		j := 2
-		args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+		// args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+		kk, pp := stringPrimaryKey(primaryKey), primaryKey.Parent.String()
+		args = append(args, pp+"/"+kk, kk, pp)
 		if entity.SoftDelete != nil {
 			j++
 			f := v.Elem().FieldByIndex(entity.SoftDelete.Index)
@@ -598,10 +608,8 @@ func (x *SQLAdapter) DeleteMulti(query *Query, keys []*datastore.Key) error {
 	table := query.table.name
 	buf := new(bytes.Buffer)
 	buf.WriteString(fmt.Sprintf("DELETE FROM %s ", quote(table)))
-	buf.WriteString(fmt.Sprintf("WHERE concat(%s,%q,%s) IN (%s)",
-		quote(FieldNameParent),
-		"/",
-		quote(FieldNameKey),
+	buf.WriteString(fmt.Sprintf("WHERE %s IN (%s)",
+		quote(FieldNamePrimaryKey),
 		strings.Trim(strings.Repeat("?,", len(args)), ",")))
 
 	if _, err := x.Exec(buf.String(), args...); err != nil {
