@@ -58,7 +58,7 @@ func (x *SQLAdapter) Create(query *Query, modelStruct interface{}, parentKey *da
 	buf.Truncate(buf.Len() - 1)
 	buf.WriteString(") ")
 	buf.WriteString(fmt.Sprintf("VALUES (%s);",
-		strings.Trim(strings.Repeat("?,", len(cols)+2), ",")))
+		strings.Trim(strings.Repeat("?,", len(cols)+3), ",")))
 
 	// Run through every property in struct and convert to string
 	v := reflect.ValueOf(modelStruct)
@@ -157,7 +157,7 @@ func (x *SQLAdapter) CreateMulti(query *Query, modelStruct interface{}, parentKe
 
 		// Generate primary key before insert to database
 		primaryKey := pKeys[i]
-		buf.WriteString(fmt.Sprintf("(%s),", strings.Trim(strings.Repeat("?,", len(cols)+2), ",")))
+		buf.WriteString(fmt.Sprintf("(%s),", strings.Trim(strings.Repeat("?,", len(cols)+3), ",")))
 		kk, pp := stringPrimaryKey(primaryKey), primaryKey.Parent.String()
 		args = append(args, pp+"/"+kk, kk, pp)
 
@@ -243,7 +243,7 @@ func (x *SQLAdapter) Upsert(query *Query, modelStruct interface{}, parentKey *da
 		f.Set(reflect.ValueOf(primaryKey))
 	}
 
-	j := 2
+	j := 3
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString(fmt.Sprintf("INSERT INTO %s ", quote(table)))
 	buf.WriteString("(")
@@ -386,7 +386,7 @@ func (x *SQLAdapter) UpsertMulti(query *Query, modelStruct interface{}, parentKe
 			ff.Set(reflect.ValueOf(primaryKey))
 		}
 
-		j := 2
+		j := 3
 		// args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
 		kk, pp := stringPrimaryKey(primaryKey), primaryKey.Parent.String()
 		args = append(args, pp+"/"+kk, kk, pp)
@@ -511,10 +511,11 @@ func (x *SQLAdapter) Update(query *Query, modelStruct interface{}) error {
 	}
 
 	buf.Truncate(buf.Len() - 1)
-	buf.WriteString(fmt.Sprintf(" WHERE %s = ? AND %s = ?",
-		quote(FieldNameKey), quote(FieldNameParent)))
+	buf.WriteString(fmt.Sprintf(" WHERE %s = ?",
+		quote(FieldNamePrimaryKey)))
 	buf.WriteString(";")
-	args = append(args, stringPrimaryKey(primaryKey), primaryKey.Parent.String())
+	pp, kk := primaryKey.Parent.String(), stringPrimaryKey(primaryKey)
+	args = append(args, pp+"/"+kk)
 
 	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
@@ -588,10 +589,10 @@ func (x *SQLAdapter) Delete(query *Query, key *datastore.Key) error {
 	buf, args := new(bytes.Buffer), make([]interface{}, 0)
 	buf.WriteString(fmt.Sprintf("DELETE FROM %s ", quote(table)))
 	buf.WriteString(fmt.Sprintf(
-		"WHERE %s = ? AND %s = ?",
-		quote(FieldNameKey), quote(FieldNameParent)))
+		"WHERE %s = ?",
+		quote(FieldNamePrimaryKey)))
 	buf.WriteString(";")
-	args = append(args, stringPrimaryKey(key), key.Parent.String())
+	args = append(args, key.Parent.String()+"/"+stringPrimaryKey(key))
 	if _, err := x.Exec(buf.String(), args...); err != nil {
 		return err
 	}
