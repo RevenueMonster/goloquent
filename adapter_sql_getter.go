@@ -341,17 +341,17 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		cc := Cursor{cc: []byte(fmt.Sprintf("%d", p.Limit))}
 		p.Cursor = cc.String()
 		if slice.Len() > int(p.Limit) && entity.PrimaryKey != nil {
+			count--
 			offset = offset + int64(p.Limit)
 			p.Cursor = (Cursor{[]byte(fmt.Sprintf("%d", offset))}).String()
 			// Get last record
-			// count--
 			// last := slice.Index(int(count))
 			// r := reflect.Indirect(last)
 			// pk := r.FieldByIndex(entity.PrimaryKey.Index)
 			// if pk.IsValid() {
 			// 	p.Cursor = pk.Interface().(*datastore.Key).Encode()
 			// }
-			// copy = reflect.MakeSlice(slice.Type(), int(count), int(count))
+			copy = reflect.MakeSlice(slice.Type(), int(count), int(count))
 		} else {
 			p.Cursor = ""
 		}
