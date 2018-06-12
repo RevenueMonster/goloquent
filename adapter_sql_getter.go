@@ -2,10 +2,10 @@ package goloquent
 
 import (
 	"encoding/base64"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"cloud.google.com/go/datastore"
@@ -136,8 +136,9 @@ func (c Cursor) String() string {
 	return strings.TrimRight(base64.URLEncoding.EncodeToString(c.cc), "=")
 }
 
-func (c Cursor) Offset() uint64 {
-	return binary.BigEndian.Uint64(c.cc)
+func (c Cursor) Offset() int64 {
+	v, _ := strconv.ParseInt(string(c.cc), 10, 64)
+	return v
 }
 
 // Decode decodes a cursor from its base-64 string representation.
@@ -278,7 +279,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	// 	query.offset = uint(offset)
 	// }
 
-	offset := uint64(0)
+	offset := int64(0)
 	args := make([]interface{}, 0)
 	if p.Cursor != "" {
 		cursorKey, err := DecodeCursor(p.Cursor)
@@ -340,7 +341,7 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 		cc := Cursor{cc: []byte(fmt.Sprintf("%d", p.Limit))}
 		p.Cursor = cc.String()
 		if slice.Len() > int(p.Limit) && entity.PrimaryKey != nil {
-			offset = offset + uint64(p.Limit)
+			offset = offset + int64(p.Limit)
 			p.Cursor = (Cursor{[]byte(fmt.Sprintf("%d", offset))}).String()
 			// Get last record
 			// count--
