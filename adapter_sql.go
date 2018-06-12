@@ -195,17 +195,13 @@ func (x *SQLAdapter) ExecQuery(q string, args ...interface{}) ([]map[string][]by
 
 		rows := make(map[string][]byte)
 		for i, key := range c {
-			var (
-				b    []byte
-				isOK bool
-			)
-			if m[i] == nil {
-				b = []byte("")
-			} else {
-				b, isOK = m[i].([]byte)
-				if !isOK {
-					b = []byte(m[i].(string))
-				}
+			var b []byte
+			switch vi := m[i].(type) {
+			case nil:
+			case []byte:
+				b = vi
+			default:
+				b = []byte(fmt.Sprintf("%v", vi))
 			}
 			rows[key] = b
 		}
