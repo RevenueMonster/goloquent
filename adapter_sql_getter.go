@@ -1,6 +1,8 @@
 package goloquent
 
 import (
+	"encoding/base64"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"reflect"
@@ -119,6 +121,38 @@ func (x *SQLAdapter) First(query *Query, modelStruct interface{}) error {
 	v.Set(o)
 
 	return nil
+}
+
+type Cursor struct {
+	cc []byte
+}
+
+// String returns a base-64 string representation of a cursor.
+func (c Cursor) String() string {
+	if c.cc == nil {
+		return ""
+	}
+
+	return strings.TrimRight(base64.URLEncoding.EncodeToString(c.cc), "=")
+}
+
+func (c Cursor) Offset() uint64 {
+	return binary.BigEndian.Uint64(c.cc)
+}
+
+// Decode decodes a cursor from its base-64 string representation.
+func DecodeCursor(s string) (Cursor, error) {
+	if s == "" {
+		return Cursor{}, nil
+	}
+	if n := len(s) % 4; n != 0 {
+		s += strings.Repeat("=", 4-n)
+	}
+	b, err := base64.URLEncoding.DecodeString(s)
+	if err != nil {
+		return Cursor{}, err
+	}
+	return Cursor{b}, nil
 }
 
 // Get :
@@ -244,15 +278,14 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	// 	query.offset = uint(offset)
 	// }
 
+	offset := uint64(0)
 	args := make([]interface{}, 0)
 	if p.Cursor != "" {
-		var cursorKey *datastore.Key
-		cursorKey, err = datastore.DecodeKey(p.Cursor)
+		cursorKey, err := DecodeCursor(p.Cursor)
 		if err != nil {
 			return errors.New("goloquent: invalid cursor key")
 		}
-		stmt.Where = append(stmt.Where, "`$PrimaryKey` >= ?")
-		args = append(args, cursorKey.Parent.String()+"/"+stringPrimaryKey(cursorKey))
+		offset = cursorKey.Offset()
 	}
 	stmt.Order = append(stmt.Order, "`$PrimaryKey` ASC")
 
@@ -275,8 +308,8 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	cap++ // extra one record for pagination
 	sql += fmt.Sprintf(" LIMIT %d", cap)
 
-	if query.offset > 0 {
-		sql += fmt.Sprintf(" OFFSET %d", query.offset)
+	if offset > 0 {
+		sql += fmt.Sprintf(" OFFSET %d", offset)
 	}
 
 	// var total uint
@@ -304,16 +337,20 @@ func (x *SQLAdapter) Paginate(query *Query, p *Pagination, modelStruct interface
 	copy := reflect.MakeSlice(slice.Type(), slice.Len(), slice.Len())
 	if slice.Len() > 0 {
 		count := uint(slice.Len())
+		cc := Cursor{cc: []byte(fmt.Sprintf("%d", p.Limit))}
+		p.Cursor = cc.String()
 		if slice.Len() > int(p.Limit) && entity.PrimaryKey != nil {
+			offset = offset + uint64(p.Limit)
+			p.Cursor = (Cursor{[]byte(fmt.Sprintf("%d", offset))}).String()
 			// Get last record
-			count--
-			last := slice.Index(int(count))
-			r := reflect.Indirect(last)
-			pk := r.FieldByIndex(entity.PrimaryKey.Index)
-			if pk.IsValid() {
-				p.Cursor = pk.Interface().(*datastore.Key).Encode()
-			}
-			copy = reflect.MakeSlice(slice.Type(), int(count), int(count))
+			// count--
+			// last := slice.Index(int(count))
+			// r := reflect.Indirect(last)
+			// pk := r.FieldByIndex(entity.PrimaryKey.Index)
+			// if pk.IsValid() {
+			// 	p.Cursor = pk.Interface().(*datastore.Key).Encode()
+			// }
+			// copy = reflect.MakeSlice(slice.Type(), int(count), int(count))
 		} else {
 			p.Cursor = ""
 		}
