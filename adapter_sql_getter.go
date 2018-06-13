@@ -34,7 +34,7 @@ func (x *SQLAdapter) Find(query *Query, key *datastore.Key, modelStruct interfac
 	cond := fmt.Sprintf(
 		"`%s` = %q AND `%s` = %q",
 		FieldNameKey, stringPrimaryKey(key), FieldNameParent, key.Parent.String())
-	q := fmt.Sprintf("SELECT * FROM (%s) AS Master WHERE %s", strings.Join(stmt.Tables, " UNION ALL "), cond)
+	q := fmt.Sprintf("%s WHERE %s", stmt.Tables[0], cond)
 	if len(stmt.Where) > 0 {
 		q += fmt.Sprintf(" AND %s", strings.Join(stmt.Where, " AND "))
 	}
