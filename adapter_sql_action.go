@@ -21,10 +21,13 @@ func getTableName(entity *Entity, query *Query) string {
 
 func getField(v reflect.Value, path []int) reflect.Value {
 	for _, p := range path {
-		v = v.Field(p)
-		if v.Kind() == reflect.Ptr && v.IsNil() {
-			return reflect.Zero(v.Type())
+		if v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				return reflect.Zero(v.Type())
+			}
+			v = v.Elem()
 		}
+		v = v.Field(p)
 	}
 	return v
 }
