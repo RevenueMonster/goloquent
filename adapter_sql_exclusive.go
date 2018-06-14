@@ -55,7 +55,7 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 	}
 
 	if len(results) > 0 {
-		idxs := newDictionary(x.getIndexes(table))
+		// idxs := newDictionary(x.getIndexes(table))
 		// indexResults := make([]map[string][]byte, 0)
 		// indexResults, err = x.ExecQuery(sqlIndex)
 		// if err != nil {
@@ -151,16 +151,16 @@ func (x *SQLAdapter) Migrate(query *Query, modelStruct interface{}) error {
 			return err
 		}
 
-		sql = fmt.Sprintf("UPDATE `%s` SET `$PrimaryKey` = concat(`$Parent`,%q,`$Key`);", table, "/")
-		if _, err := x.Exec(sql); err != nil {
-			return err
-		}
+		// sql = fmt.Sprintf("UPDATE `%s` SET `$PrimaryKey` = concat(`$Parent`,%q,`$Key`);", table, "/")
+		// if _, err := x.Exec(sql); err != nil {
+		// 	return err
+		// }
 
-		if !idxs.has("PrimaryKey_unique") {
-			if _, err := x.Exec(fmt.Sprintf("ALTER TABLE `%s` ADD UNIQUE INDEX `PrimaryKey_unique` (`$PrimaryKey`)", table)); err != nil {
-				return err
-			}
-		}
+		// if !idxs.has("PrimaryKey_unique") {
+		// 	if _, err := x.Exec(fmt.Sprintf("ALTER TABLE `%s` ADD UNIQUE INDEX `PrimaryKey_unique` (`$PrimaryKey`)", table)); err != nil {
+		// 		return err
+		// 	}
+		// }
 
 		return nil
 	}
